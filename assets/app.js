@@ -120,7 +120,11 @@
       })
       .catch(function (e) {
         box.setAttribute('data-state', 'error');
-        if ($('w-temp').textContent === '--') $('w-label').textContent = 'Météo indisponible (' + e.message + '), nouvel essai dans 15 min';
+        if ($('w-temp').textContent === '--') {
+          // Never loaded yet: retry soon instead of waiting for the 15 min cycle.
+          $('w-label').textContent = 'Météo indisponible (' + e.message + '), nouvel essai dans 2 min';
+          setTimeout(loadWeather, 120000);
+        }
       });
   }
 
