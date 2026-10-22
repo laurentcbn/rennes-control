@@ -169,6 +169,20 @@ body::after {
 }
 .w-grid dd { font-family: var(--f-mono); font-size: 14px; margin-top: 2px; }
 
+/* hourly forecast: six columns, rain probability as a red gauge */
+.hours { display: flex; flex-direction: column; gap: 10px; min-height: 0; border-top: 1px solid var(--rule); padding-top: 14px; }
+.h-list { flex: 1 1 auto; display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; min-height: 96px; }
+.h-list li { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.h-hour { font-family: var(--f-mono); font-size: 11px; color: var(--paper-dim); }
+.h-temp { font-weight: 700; font-stretch: 75%; font-size: 18px; }
+.h-bar {
+  flex: 1 1 auto; min-height: 28px; width: 10px;
+  display: flex; align-items: flex-end;
+  background: var(--ink-2); border: 1px solid var(--rule);
+}
+.h-bar i { display: block; width: 100%; background: var(--blood-hi); }
+.h-rain { font-family: var(--f-mono); font-size: 10px; color: var(--paper-faint); }
+
 /* ── board ────────────────────────────────── */
 .board {
   grid-area: board;
@@ -317,7 +331,8 @@ body::after {
     grid-template-rows: auto 1fr auto;
     grid-template-areas: "mast mast" "side board" "foot foot";
   }
-  .side { border-top: 0; border-right: 1px solid var(--rule); padding-right: 24px; justify-content: space-between; }
+  .side { border-top: 0; border-right: 1px solid var(--rule); padding-right: 24px; }
+  .hours { flex: 1 1 auto; }
   .board { overflow: hidden; }
 }
 @media (min-width: 900px) {
@@ -332,6 +347,9 @@ body::after {
   .dep:first-child .dep-count { font-size: 38px; }
   .dep-count { font-size: 28px; }
   .w-temp { font-size: 52px; }
+  .side { gap: 14px; padding-block: 16px; }
+  .w-grid { margin-top: 10px; gap: 6px 18px; }
+  .h-list { min-height: 72px; }
 }
 
 /* ── phones ───────────────────────────────── */

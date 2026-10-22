@@ -9,7 +9,8 @@
     weatherUrl: 'https://api.open-meteo.com/v1/forecast?latitude=48.1113&longitude=-1.6800' +
       '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,precipitation' +
       '&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max' +
-      '&timezone=Europe%2FParis&forecast_days=1',
+      '&hourly=temperature_2m,precipitation_probability' +
+      '&timezone=Europe%2FParis&forecast_days=2',
     feedEverySec: 30,       // STAR feed is regenerated about every 30 s
     weatherEverySec: 900,
     scheduleEverySec: 6 * 3600,
@@ -80,6 +81,27 @@
   };
   var DIRS = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
 
+  // Next 6 hours from the hourly forecast (times are Europe/Paris local, "YYYY-MM-DDTHH:00").
+  function renderHours(h) {
+    var list = $('w-hours');
+    if (!h || !h.time) { list.innerHTML = ''; return; }
+    var parts = {};
+    new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hour12: false })
+      .formatToParts(new Date()).forEach(function (p) { parts[p.type] = p.value; });
+    var nowKey = parts.year + '-' + parts.month + '-' + parts.day + 'T' + (parts.hour === '24' ? '00' : parts.hour) + ':00';
+    var start = 0;
+    while (start < h.time.length && h.time[start] <= nowKey) start++;
+    var html = '';
+    for (var i = start; i < Math.min(start + 6, h.time.length); i++) {
+      var p = h.precipitation_probability[i], pc = p === null || p === undefined ? null : p;
+      html += '<li><span class="h-hour">' + h.time[i].slice(11, 13) + 'h</span>' +
+        '<span class="h-temp">' + Math.round(h.temperature_2m[i]) + '°</span>' +
+        '<span class="h-bar" aria-hidden="true"><i style="height:' + (pc || 0) + '%"></i></span>' +
+        '<span class="h-rain">' + (pc === null ? '–' : pc + '%') + '</span></li>';
+    }
+    list.innerHTML = html;
+  }
+
   function loadWeather() {
     var box = $('weather');
     fetchWithTimeout(CONFIG.weatherUrl, { cache: 'no-store' })
@@ -93,6 +115,7 @@
         $('w-wind').textContent = Math.round(c.wind_speed_10m) + ' km/h ' + DIRS[Math.round(c.wind_direction_10m / 45) % 8];
         var p = d.precipitation_probability_max && d.precipitation_probability_max[0];
         $('w-rain').textContent = (p === null || p === undefined ? '–' : p + ' %') + (c.precipitation > 0 ? ' · ' + c.precipitation + ' mm' : '');
+        renderHours(w.hourly);
         box.setAttribute('data-state', 'ok');
       })
       .catch(function (e) {
