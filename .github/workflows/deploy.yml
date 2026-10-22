@@ -43,6 +43,8 @@ jobs:
         run: |
           mkdir -p _site
           cp -r index.html assets data _site/
+          # cache-busting: each deploy gets new asset URLs (Safari keeps files 10 min)
+          sed -i "s/?v=dev/?v=${GITHUB_SHA::8}/g" _site/index.html
           touch _site/.nojekyll
 
       - uses: actions/upload-pages-artifact@v3

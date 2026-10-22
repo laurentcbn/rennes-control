@@ -81,19 +81,18 @@
   };
   var DIRS = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
 
-  // Next 6 hours from the hourly forecast (times are Europe/Paris local, "YYYY-MM-DDTHH:00").
-  function renderHours(h) {
+  // Next 6 hours of the hourly forecast. Open-Meteo gives local Europe/Paris times
+  // ("YYYY-MM-DDTHH:MM") and the current one in current.time, so plain string
+  // comparison works on every browser without date parsing.
+  function renderHours(h, currentTime) {
     var list = $('w-hours');
-    if (!h || !h.time) { list.innerHTML = ''; return; }
-    var parts = {};
-    new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hour12: false })
-      .formatToParts(new Date()).forEach(function (p) { parts[p.type] = p.value; });
-    var nowKey = parts.year + '-' + parts.month + '-' + parts.day + 'T' + (parts.hour === '24' ? '00' : parts.hour) + ':00';
+    if (!h || !h.time || !currentTime) { list.innerHTML = ''; return; }
     var start = 0;
-    while (start < h.time.length && h.time[start] <= nowKey) start++;
+    while (start < h.time.length && h.time[start] <= currentTime) start++;
     var html = '';
     for (var i = start; i < Math.min(start + 6, h.time.length); i++) {
-      var p = h.precipitation_probability[i], pc = p === null || p === undefined ? null : p;
+      var p = h.precipitation_probability ? h.precipitation_probability[i] : null;
+      var pc = p === null || p === undefined ? null : p;
       html += '<li><span class="h-hour">' + h.time[i].slice(11, 13) + 'h</span>' +
         '<span class="h-temp">' + Math.round(h.temperature_2m[i]) + '°</span>' +
         '<span class="h-bar" aria-hidden="true"><i style="height:' + (pc || 0) + '%"></i></span>' +
@@ -115,7 +114,7 @@
         $('w-wind').textContent = Math.round(c.wind_speed_10m) + ' km/h ' + DIRS[Math.round(c.wind_direction_10m / 45) % 8];
         var p = d.precipitation_probability_max && d.precipitation_probability_max[0];
         $('w-rain').textContent = (p === null || p === undefined ? '–' : p + ' %') + (c.precipitation > 0 ? ' · ' + c.precipitation + ' mm' : '');
-        renderHours(w.hourly);
+        renderHours(w.hourly, c.time);
         box.setAttribute('data-state', 'ok');
       })
       .catch(function (e) {
