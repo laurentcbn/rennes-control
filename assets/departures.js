@@ -133,15 +133,25 @@
       var v = e.vehicle;
       if (!v || !v.trip || !trips[v.trip.tripId]) return;
       if (v.timestamp && nowSec - v.timestamp > (maxAgeSec || 300)) return; // stale fix
-      var line = trips[v.trip.tripId], i = index[v.stopId];
+      var line = trips[v.trip.tripId], i = index[v.stopId], p = v.position;
+      var hasFix = p && p.latitude && p.longitude;
       var bus = { line: line, vehicle: (v.vehicle && (v.vehicle.label || v.vehicle.id)) || '?', trip: v.trip.tripId };
-      if (i === undefined) return;           // elsewhere on the route (or already past us)
-      if (v.currentStatus === 1) {           // STOPPED_AT
+
+      if (i === undefined) {
+        // Not one of the drawn stops (e.g. a temporary stop during works): place it
+        // only if its GPS fix lies on the drawn stretch.
+        var near = hasFix ? nearestOnTrack(track, p) : null;
+        if (!near || near.meters > 300) return;
+        bus.pos = near.pos;
+      } else if (v.currentStatus === 1) {    // STOPPED_AT
+        if (hasFix && distance(track[i], p) > 1000) return; // GPS contradicts the stop: unreliable
         bus.pos = i; bus.atStop = true;
       } else if (i === 0) {                  // heading to the first drawn stop: still further away
         bus.pos = 0; bus.far = true;
       } else {
-        bus.pos = i - 1 + segmentFraction(track[i - 1], track[i], v.position);
+        var seg = hasFix ? project(track[i - 1], track[i], p) : { t: 0.5, meters: 0 };
+        if (seg.meters > 1000) return;       // GPS far from the announced segment: unreliable
+        bus.pos = i - 1 + Math.max(0.05, Math.min(0.95, seg.t));
       }
       if (bus.pos > last) bus.pos = last;
       out.push(bus);
@@ -150,15 +160,29 @@
     return out;
   }
 
-  // Fraction (0..1) of the way from stop a to stop b, projecting the GPS fix on the segment.
-  function segmentFraction(a, b, p) {
-    if (!p || !p.latitude) return 0.5;
+  // Local flat projection, accurate enough at city scale (metres).
+  function xy(lat, lon, k) { return [lon * k * 111320, lat * 110540]; }
+
+  // Projection of a GPS fix on the segment a-b: t in 0..1 and distance to the segment.
+  function project(a, b, p) {
     var k = Math.cos(a.lat * Math.PI / 180);
-    var ax = a.lon * k, ay = a.lat, bx = b.lon * k, by = b.lat, px = p.longitude * k, py = p.latitude;
-    var dx = bx - ax, dy = by - ay, len = dx * dx + dy * dy;
-    if (!len) return 0.5;
-    var t = ((px - ax) * dx + (py - ay) * dy) / len;
-    return Math.max(0.05, Math.min(0.95, t));
+    var A = xy(a.lat, a.lon, k), B = xy(b.lat, b.lon, k), P = xy(p.latitude, p.longitude, k);
+    var dx = B[0] - A[0], dy = B[1] - A[1], len = dx * dx + dy * dy;
+    var t = len ? ((P[0] - A[0]) * dx + (P[1] - A[1]) * dy) / len : 0;
+    var tc = Math.max(0, Math.min(1, t));
+    var cx = A[0] + tc * dx - P[0], cy = A[1] + tc * dy - P[1];
+    return { t: tc, meters: Math.sqrt(cx * cx + cy * cy) };
+  }
+
+  function distance(a, p) { return project(a, a, p).meters; }
+
+  function nearestOnTrack(track, p) {
+    var best = null;
+    for (var i = 1; i < track.length; i++) {
+      var s = project(track[i - 1], track[i], p);
+      if (!best || s.meters < best.meters) best = { pos: i - 1 + s.t, meters: s.meters };
+    }
+    return best;
   }
 
   /*
