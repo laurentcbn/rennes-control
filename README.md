@@ -15,6 +15,7 @@ Les horaires viennent uniquement des données officielles STAR. Rien n'est inven
 | Temps réel | [STAR GTFS-RT Trip Updates](https://proxy.transport.data.gouv.fr/resource/star-rennes-integration-gtfs-rt-trip-update) (proxy officiel transport.data.gouv.fr) | Protobuf GTFS-RT 2.0 | Oui, réponse `Access-Control-Allow-Origin: *` |
 | Horaires théoriques | [GTFS STAR en cours](https://eu.ftp.opendatasoft.com/star/gtfs/GTFS_STAR_BUS_METRO_EN_COURS.zip), référencé sur [transport.data.gouv.fr](https://transport.data.gouv.fr/datasets/versions-des-horaires-theoriques-des-lignes-de-bus-et-de-metro-du-reseau-star-dans-les-formats-gtfs-et-netex-ainsi-que-les-urls-dacces-au-gtfs-rt-1) | GTFS (zip) → `data/schedule.json` | Fichier statique du site |
 | Bus en approche (GPS) | [STAR GTFS-RT Vehicle Positions](https://proxy.transport.data.gouv.fr/resource/star-rennes-integration-gtfs-rt-vehicle-position) | Protobuf GTFS-RT 2.0 | Oui (CORS `*`) |
+| Grèves, travaux | [STAR GTFS-RT Alerts](https://proxy.transport.data.gouv.fr/resource/star-rennes-integration-gtfs-rt-alerts) | Protobuf GTFS-RT 2.0 | Oui (CORS `*`) |
 | Météo | [Open-Meteo](https://open-meteo.com/) | JSON | Oui, sans clé |
 
 **Aucun backend ni aucune clé n'est nécessaire.** Le flux GTFS-RT autorise les
@@ -75,6 +76,24 @@ vers l'arrêt, à partir du flux GPS STAR (rafraîchi toutes les 15 s) :
 
 La liste des arrêts est extraite du GTFS par `tools/build_schedule.py` (champ `tracks`).
 
+## Grèves et info trafic
+
+Le flux d'alertes STAR est relu toutes les 5 min. Seules les alertes utiles à
+Pont de Châteaudun sont affichées :
+
+- **bandeau rouge** : grève, manifestation, service supprimé ou réduit sur tout
+  le réseau ou sur le C4 / C6, en cours ou annoncé dans les 36 h ;
+- **ligne discrète sous la piste** : autres alertes en cours sur le C4 / C6 qui
+  touchent l'arrêt ou les 6 arrêts précédents (les arrêts déplacés sont en
+  pointillés orange sur la piste). Plusieurs alertes défilent toutes les 8 s ;
+- les alertes sur des arrêts éloignés des lignes sont ignorées.
+
+## Le majordome
+
+Une phrase en haut de l'écran commente la situation réelle : grève, bus imminent,
+pluie, retard, avance, heure de la journée (`assets/butler.js`, testé dans
+`tests/butler.js`).
+
 ## Lancer en local
 
 ```bash
@@ -91,10 +110,13 @@ fonctionne pas, car le navigateur bloque la lecture de `data/schedule.json` : il
 ```bash
 node tests/unit.js                   # fusion théorique / temps réel, annulations, retards, libellés
 node tests/track.js                  # placement des bus sur la piste (coordonnées réelles des arrêts)
+node tests/alerts.js                 # tri des alertes (grève annoncée, travaux, alertes hors zone)
+node tests/butler.js                 # phrases du majordome
 node tests/live_board.js             # télécharge le vrai flux et affiche le tableau C4 / C6
 pip install gtfs-realtime-bindings
 python3 tests/compare_decoder.py feed.pb   # compare le décodeur JS au décodeur de référence Google
 python3 tests/compare_vehicles.py vp.pb    # idem pour les positions GPS
+python3 tests/compare_alerts.py alerts.pb  # idem pour les alertes
 NODE_PATH=$(npm root -g) node tests/browser_check.js http://localhost:8000/   # Playwright, viewport iPad
 ```
 

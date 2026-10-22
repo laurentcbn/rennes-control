@@ -6,6 +6,7 @@
   var CONFIG = {
     feedUrl: 'https://proxy.transport.data.gouv.fr/resource/star-rennes-integration-gtfs-rt-trip-update',
     vehiclesUrl: 'https://proxy.transport.data.gouv.fr/resource/star-rennes-integration-gtfs-rt-vehicle-position',
+    alertsUrl: 'https://proxy.transport.data.gouv.fr/resource/star-rennes-integration-gtfs-rt-alerts',
     scheduleUrl: 'data/schedule.json',
     weatherUrl: 'https://api.open-meteo.com/v1/forecast?latitude=48.1113&longitude=-1.6800' +
       '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,precipitation' +
@@ -113,7 +114,7 @@
   function renderButler() {
     var el = $('butler');
     var line = state.schedule && !state.feedLoading
-      ? Butler.butlerLine(board, state.weather || null, nowSec(), parseInt(fmtHour.format(new Date()), 10) % 24) : null;
+      ? Butler.butlerLine(board, state.weather || null, nowSec(), parseInt(fmtHour.format(new Date()), 10) % 24, alerts) : null;
     if (!line || el.getAttribute('data-line') === line) return;
     el.setAttribute('data-line', line);
     el.classList.remove('show');
@@ -181,6 +182,48 @@
       .then(renderTrack);
   }
 
+  /* ── STAR alerts (strikes, works) ─────────── */
+  var alerts = { major: [], local: [], movedStops: {} }, alertTurn = 0;
+  var fmtDay = new Intl.DateTimeFormat('fr-FR', { timeZone: TZ, weekday: 'long', day: 'numeric', month: 'long' });
+  var fmtShort = new Intl.DateTimeFormat('fr-FR', { timeZone: TZ, day: 'numeric', month: 'short' });
+
+  function loadAlerts() {
+    return fetchWithTimeout(CONFIG.alertsUrl, { cache: 'no-store' })
+      .then(function (r) { return r.arrayBuffer(); })
+      .then(function (buf) { state.alerts = GtfsRt.decodeFeed(buf); })
+      .catch(function (e) { if (window.console) console.warn('[Rennes Control] alertes :', e && e.message); })
+      .then(render);
+  }
+
+  function renderAlerts(now) {
+    alerts = state.schedule && state.alerts ? Departures.relevantAlerts(state.schedule, state.alerts, now) : { major: [], local: [], movedStops: {} };
+    var lines = function (a) { return a.lines.length ? a.lines.join(' · ') : 'Tout le réseau'; };
+
+    var big = $('alert-major');
+    if (alerts.major.length) {
+      var m = alerts.major[0];
+      var when = m.upcoming && m.from ? 'À partir du ' + fmtDay.format(new Date(m.from * 1000)) + ' ' + hm(m.from)
+        : m.until ? 'Jusqu’au ' + fmtDay.format(new Date(m.until * 1000)) + ' ' + hm(m.until) : '';
+      big.innerHTML = '<b>' + esc(m.title) + '</b> <span class="al-lines">' + esc(lines(m)) + '</span> ' +
+        esc(m.text) + (when ? ' <span class="al-when">' + esc(when) + '</span>' : '');
+      big.hidden = false;
+    } else big.hidden = true;
+
+    var small = $('alert-local');
+    if (alerts.local.length) {
+      var a = alerts.local[alertTurn % alerts.local.length];
+      var what = a.stops.length ? a.stops.join(', ') + (a.stops.length > 1 ? ' : arrêts reportés' : ' : arrêt reporté') : a.text;
+      small.innerHTML = '<span class="al-tag">' + esc(a.title) + '</span> ' + esc(lines(a)) + ' · ' + esc(what) +
+        (a.until ? ' · jusqu’au ' + esc(fmtShort.format(new Date(a.until * 1000))) : '') +
+        (alerts.local.length > 1 ? ' <span class="al-count">' + (alertTurn % alerts.local.length + 1) + '/' + alerts.local.length + '</span>' : '');
+      small.hidden = false;
+    } else small.hidden = true;
+
+    [].slice.call(document.querySelectorAll('#track-stops li')).forEach(function (li) {
+      li.classList.toggle('moved', !!alerts.movedStops[li.getAttribute('data-id')]);
+    });
+  }
+
   /* ── live track ───────────────────────────── */
   var trackBuilt = false;
   function buildTrack() {
@@ -189,7 +232,7 @@
     var n = t.length - 1;
     $('track-stops').innerHTML = t.map(function (s, i) {
       var cls = i === 0 ? 'first' : i === n ? 'last here' : '';
-      return '<li class="' + cls + '" style="left:' + (i / n * 100) + '%"><i></i><span>' + esc(s.name) + '</span></li>';
+      return '<li class="' + cls + '" data-id="' + esc(s.id) + '" style="left:' + (i / n * 100) + '%"><i></i><span>' + esc(s.name) + '</span></li>';
     }).join('');
     trackBuilt = true;
     return true;
@@ -296,6 +339,8 @@
     }
   }
   window.addEventListener('resize', function () { fitBoard(); });
+  // Web fonts change line heights: fit again once they are in.
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { fitBoard(); });
 
   var board = {};
   function render() {
@@ -304,6 +349,7 @@
     if (state.schedule) board = Departures.buildBoard(state.schedule, feed, now, { perLine: CONFIG.perLine });
     renderBoard(now);
     renderTrack();
+    renderAlerts(now);
     fitBoard();
     renderButler();
 
@@ -360,11 +406,14 @@
     loadSchedule();
     loadFeed();
     loadVehicles();
+    loadAlerts();
     loadWeather();
     setInterval(tickClock, 1000);
     every(5, render);  // countdowns
     every(CONFIG.feedEverySec, function () { if (!document.hidden) loadFeed(); });
     every(15, function () { if (!document.hidden) loadVehicles(); });
+    every(300, function () { if (!document.hidden) loadAlerts(); });
+    every(8, function () { if (alerts.local.length > 1) { alertTurn++; render(); } });
     every(CONFIG.weatherEverySec, loadWeather);
     every(CONFIG.scheduleEverySec, loadSchedule);
     document.addEventListener('visibilitychange', function () {

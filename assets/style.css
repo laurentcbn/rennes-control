@@ -266,6 +266,29 @@ body::after {
 .track-buses .bus.stacked { margin-left: -36px; }
 .track-buses .bus.stacked.end { margin-left: 0; margin-right: 36px; }
 
+/* STAR alerts: strikes in red, works on our stretch as a quiet line under the track */
+.alert-major {
+  font-family: var(--f-mono); font-size: 13px; line-height: 1.45;
+  padding: 10px 12px;
+  background: var(--blood); color: var(--paper);
+}
+.alert-major b {
+  font-family: var(--f-display); font-weight: 900; font-stretch: 75%;
+  font-size: 18px; text-transform: uppercase; letter-spacing: .02em; margin-right: 6px;
+}
+.alert-major .al-lines, .alert-major .al-when { opacity: .8; }
+.alert-local {
+  font-family: var(--f-mono); font-size: 11px; line-height: 1.4; color: var(--paper-dim);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.alert-local .al-tag {
+  color: var(--amber); text-transform: uppercase; letter-spacing: .12em;
+  border: 1px solid var(--amber); padding: 1px 5px; margin-right: 4px;
+}
+.alert-local .al-count { color: var(--paper-faint); }
+.track-stops li.moved i { border-style: dashed; border-color: var(--amber); }
+.track-stops li.moved span { color: var(--amber); }
+
 .banner {
   font-family: var(--f-mono);
   font-size: 13px;

@@ -118,11 +118,41 @@
     7: function (r, w, o) { o.stopId = str(r.bytes()); },
     8: function (r, w, o) { o.vehicle = decode(r.bytes(), VehicleDescriptor, {}); }
   };
+  var Translation = {
+    1: function (r, w, o) { o.text = str(r.bytes()); },
+    2: function (r, w, o) { o.language = str(r.bytes()); }
+  };
+  var TranslatedString = {
+    1: function (r, w, o) { o.translations.push(decode(r.bytes(), Translation, {})); }
+  };
+  function translated(r) { return decode(r.bytes(), TranslatedString, { translations: [] }); }
+  var TimeRange = {
+    1: function (r, w, o) { o.start = r.varint(); },
+    2: function (r, w, o) { o.end = r.varint(); }
+  };
+  var EntitySelector = {
+    1: function (r, w, o) { o.agencyId = str(r.bytes()); },
+    2: function (r, w, o) { o.routeId = str(r.bytes()); },
+    3: function (r, w, o) { o.routeType = r.varint(); },
+    4: function (r, w, o) { o.trip = decode(r.bytes(), TripDescriptor, {}); },
+    5: function (r, w, o) { o.stopId = str(r.bytes()); },
+    6: function (r, w, o) { o.directionId = r.varint(); }
+  };
+  var Alert = {
+    1: function (r, w, o) { o.activePeriods.push(decode(r.bytes(), TimeRange, {})); },
+    5: function (r, w, o) { o.informedEntities.push(decode(r.bytes(), EntitySelector, {})); },
+    6: function (r, w, o) { o.cause = r.varint(); },
+    7: function (r, w, o) { o.effect = r.varint(); },
+    8: function (r, w, o) { o.url = translated(r); },
+    10: function (r, w, o) { o.headerText = translated(r); },
+    11: function (r, w, o) { o.descriptionText = translated(r); }
+  };
   var FeedEntity = {
     1: function (r, w, o) { o.id = str(r.bytes()); },
     2: function (r, w, o) { o.isDeleted = !!r.varint(); },
     3: function (r, w, o) { o.tripUpdate = decode(r.bytes(), TripUpdate, { stopTimeUpdates: [] }); },
-    4: function (r, w, o) { o.vehicle = decode(r.bytes(), VehiclePosition, { currentStatus: 2 }); }
+    4: function (r, w, o) { o.vehicle = decode(r.bytes(), VehiclePosition, { currentStatus: 2 }); },
+    5: function (r, w, o) { o.alert = decode(r.bytes(), Alert, { activePeriods: [], informedEntities: [], cause: 1, effect: 8 }); }
   };
   var FeedHeader = {
     1: function (r, w, o) { o.version = str(r.bytes()); },
@@ -144,7 +174,9 @@
     decodeFeed: decodeFeed,
     TRIP: { SCHEDULED: 0, ADDED: 1, UNSCHEDULED: 2, CANCELED: 3, REPLACEMENT: 5, DUPLICATED: 6, DELETED: 7 },
     STOP: { SCHEDULED: 0, SKIPPED: 1, NO_DATA: 2, UNSCHEDULED: 3 },
-    VEHICLE: { INCOMING_AT: 0, STOPPED_AT: 1, IN_TRANSIT_TO: 2 }
+    VEHICLE: { INCOMING_AT: 0, STOPPED_AT: 1, IN_TRANSIT_TO: 2 },
+    CAUSE: { STRIKE: 4, DEMONSTRATION: 5 },
+    EFFECT: { NO_SERVICE: 1, REDUCED_SERVICE: 2 }
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.GtfsRt = api;

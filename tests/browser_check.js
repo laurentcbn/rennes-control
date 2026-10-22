@@ -35,6 +35,7 @@ const { chromium } = require('playwright');
     C4: [...document.querySelectorAll('#line-C4 .deps > li')].map(l => l.innerText.replace(/\n+/g, ' ')),
     C6: [...document.querySelectorAll('#line-C6 .deps > li')].map(l => l.innerText.replace(/\n+/g, ' ')),
     overflowX: document.documentElement.scrollWidth > innerWidth,
+    visibleDeps: [...document.querySelectorAll('.deps')].map(l => [...l.querySelectorAll('.dep')].filter(d => !d.hidden && getComputedStyle(d).display !== 'none').length),
     side: (b => b.scrollHeight + '/' + b.clientHeight)(document.querySelector('.side')),
     hours: document.getElementById('w-hours').innerText.replace(/\n+/g, ' '),
     track: document.getElementById('track').innerText.replace(/\n+/g, ' | '),

@@ -161,7 +161,77 @@
     return Math.max(0.05, Math.min(0.95, t));
   }
 
-  var api = { buildBoard: buildBoard, trackPositions: trackPositions, countdown: countdown, delayLabel: delayLabel, indexFeed: indexFeed };
+  /*
+   * Keep the STAR alerts that matter at Pont de Châteaudun.
+   *   major: strike / demonstration / no or reduced service on the whole network or on C4/C6
+   *          (also announced ones starting within 36 h)
+   *   local: other active alerts on C4/C6 touching our stop or the stops just before it
+   * Alerts about stops elsewhere on the lines are left out.
+   * returns { major: [item], local: [item], movedStops: { stopId: true } }
+   * item = { id, lines: ['C4'], title, text, until, upcoming, stops: [names] }
+   */
+  var STRIKE = 4, DEMONSTRATION = 5, NO_SERVICE = 1, REDUCED_SERVICE = 2;
+
+  function text(t) {
+    if (!t || !t.translations || !t.translations.length) return '';
+    var fr = t.translations.filter(function (x) { return !x.language || x.language === 'fr'; })[0] || t.translations[0];
+    return (fr.text || '').replace(/\u00a0/g, ' ').trim();
+  }
+
+  function relevantAlerts(schedule, feed, nowSec) {
+    var out = { major: [], local: [], movedStops: {} };
+    if (!feed || !schedule.tracks) return out;
+    var routeLine = {}, track = schedule.tracks.C4 || [], stopName = {};
+    Object.keys(schedule.lines).forEach(function (k) { routeLine[schedule.lines[k].route_id] = k; });
+    track.forEach(function (st) { stopName[st.id] = st.name; });
+    var seen = {};
+
+    feed.entities.forEach(function (e) {
+      var a = e.alert;
+      if (!a) return;
+      var active = !a.activePeriods.length || a.activePeriods.some(function (p) {
+        return (p.start || 0) <= nowSec && (!p.end || nowSec < p.end);
+      });
+      var startsSoon = !active && a.activePeriods.some(function (p) { return p.start > nowSec && p.start - nowSec < 36 * 3600; });
+      var lines = {}, stops = {}, network = false, lineWide = false, local = false;
+      a.informedEntities.forEach(function (x) {
+        var line = x.routeId ? routeLine[x.routeId] : null;
+        if (!x.routeId && !x.stopId) network = true;
+        if (line) lines[line] = true;
+        if (line && !x.stopId) lineWide = true;
+        if (x.stopId && stopName[x.stopId] && (line || !x.routeId)) { local = true; stops[x.stopId] = true; }
+      });
+      var ours = network || lineWide || local || Object.keys(lines).length > 0;
+      var major = (a.cause === STRIKE || a.cause === DEMONSTRATION || a.effect === NO_SERVICE || a.effect === REDUCED_SERVICE) && ours;
+      if (!(major && (active || startsSoon)) && !(active && (network || lineWide || local))) return;
+
+      var until = null, from = null;
+      a.activePeriods.forEach(function (p) {
+        if (p.end && (!until || p.end > until)) until = p.end;
+        if (p.start > nowSec && (!from || p.start < from)) from = p.start;
+      });
+      var desc = text(a.descriptionText).split(/\n+/).map(function (l) { return l.trim(); }).filter(Boolean);
+      var item = {
+        id: e.id, title: text(a.headerText) || 'Info trafic',
+        lines: Object.keys(lines).filter(function (k) { return lines[k]; }).sort(),
+        stops: track.filter(function (st) { return stops[st.id]; }).map(function (st) { return st.name; }),
+        text: desc.filter(function (l) { return !/^(jusqu|du |à partir|a partir)/i.test(l); })[0] || desc[0] || '',
+        until: until, upcoming: !active, from: from, network: network, strike: a.cause === STRIKE
+      };
+      var key = item.title + '|' + item.stops.join(',') + '|' + until;
+      if (seen[key]) { // same notice published for C4 and C6
+        item.lines.forEach(function (l) { if (seen[key].lines.indexOf(l) === -1) seen[key].lines.push(l); });
+        seen[key].lines.sort();
+        return;
+      }
+      seen[key] = item;
+      if (major) out.major.push(item);
+      else { out.local.push(item); if (active) Object.keys(stops).forEach(function (id) { out.movedStops[id] = true; }); }
+    });
+    return out;
+  }
+
+  var api = { buildBoard: buildBoard, trackPositions: trackPositions, relevantAlerts: relevantAlerts, countdown: countdown, delayLabel: delayLabel, indexFeed: indexFeed };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Departures = api;
 })(this);

@@ -13,8 +13,14 @@
    * weather: { code, precipitation, rainSoon (0-100 probability next hour) } or null
    * nowSec:  unix seconds; hour: current hour in Europe/Paris (0-23)
    */
-  function butlerLine(board, weather, nowSec, hour) {
+  function butlerLine(board, weather, nowSec, hour, alerts) {
     if (!board) return null;
+    var major = alerts && alerts.major || [];
+    var strikeNow = major.filter(function (a) { return !a.upcoming; })[0];
+    var strikeSoon = major.filter(function (a) { return a.upcoming; })[0];
+    var isStrike = function (a) { return a.strike || /gr[eè]ve/i.test(a.title); };
+    if (strikeNow) return isStrike(strikeNow) ? 'Grève sur le réseau. Le vélo, peut-être ?' : 'Le réseau est perturbé. Prévoyez large.';
+    if (strikeSoon) return isStrike(strikeSoon) ? 'Une grève est annoncée. On s’organise ?' : 'Perturbations annoncées. On s’organise ?';
     var all = [];
     Object.keys(board).forEach(function (k) { all = all.concat(board[k]); });
     var next = all.filter(function (d) { return d.status !== 'canceled'; })
