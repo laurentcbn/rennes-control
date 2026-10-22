@@ -25,7 +25,7 @@ const { chromium } = require('playwright');
   page.on('requestfailed', r => failed.push(r.url().slice(0, 90) + ' ' + (r.failure() || {}).errorText));
   await page.goto(url, { waitUntil: 'load' });
   await page.waitForFunction(() => document.getElementById('feed-pill').dataset.state !== 'loading', null, { timeout: 30000 });
-  await page.waitForTimeout(2500);
+  await page.waitForTimeout(+(process.env.WAIT || 2500));
   const info = await page.evaluate(() => ({
     pill: document.getElementById('feed-pill').innerText,
     banner: document.getElementById('banner').hidden ? null : document.getElementById('banner').innerText,
