@@ -5,6 +5,7 @@
 
   var CONFIG = {
     feedUrl: 'https://proxy.transport.data.gouv.fr/resource/star-rennes-integration-gtfs-rt-trip-update',
+    vehiclesUrl: 'https://proxy.transport.data.gouv.fr/resource/star-rennes-integration-gtfs-rt-vehicle-position',
     scheduleUrl: 'data/schedule.json',
     weatherUrl: 'https://api.open-meteo.com/v1/forecast?latitude=48.1113&longitude=-1.6800' +
       '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,precipitation' +
@@ -151,6 +152,63 @@
       .then(function () { state.feedLoading = false; render(); });
   }
 
+  // GPS positions: optional layer, failures only hide the track.
+  function loadVehicles() {
+    return fetchWithTimeout(CONFIG.vehiclesUrl, { cache: 'no-store' })
+      .then(function (r) { return r.arrayBuffer(); })
+      .then(function (buf) { state.vehicles = GtfsRt.decodeFeed(buf); state.vehiclesError = null; })
+      .catch(function (e) { state.vehiclesError = e instanceof Error ? e.message : String(e); })
+      .then(renderTrack);
+  }
+
+  /* ── live track ───────────────────────────── */
+  var trackBuilt = false;
+  function buildTrack() {
+    var t = state.schedule && state.schedule.tracks && state.schedule.tracks.C4;
+    if (!t || trackBuilt) return !!t;
+    var n = t.length - 1;
+    $('track-stops').innerHTML = t.map(function (s, i) {
+      var cls = i === 0 ? 'first' : i === n ? 'last here' : '';
+      return '<li class="' + cls + '" style="left:' + (i / n * 100) + '%"><i></i><span>' + esc(s.name) + '</span></li>';
+    }).join('');
+    trackBuilt = true;
+    return true;
+  }
+
+  function renderTrack() {
+    if (!buildTrack()) return;
+    var s = state.schedule, now = nowSec(), n = s.tracks.C4.length - 1;
+    var vp = state.vehicles && state.vehicles.header.timestamp && now - state.vehicles.header.timestamp < CONFIG.ignoreAfterSec ? state.vehicles : null;
+    var buses = vp ? Departures.trackPositions(s, vp, now) : [];
+    // Live departures whose bus is not yet on the drawn stretch: show it waiting at the left edge.
+    var seen = {};
+    buses.forEach(function (b) { seen[b.trip] = true; });
+    ['C4', 'C6'].forEach(function (line) {
+      (board[line] || []).forEach(function (d) {
+        if (d.status === 'live' && !seen[d.trip] && d.time - now < 1200 && d.time > now) buses.push({ line: line, vehicle: d.vehicle, trip: d.trip, pos: 0, far: true, eta: d.time });
+      });
+    });
+    var lines = s.lines, prev = null;
+    buses.sort(function (a, b) { return b.pos - a.pos; });
+    $('track-buses').innerHTML = buses.map(function (b) {
+      var l = lines[b.line];
+      // Two buses close together: the second one keeps only its badge, nudged aside.
+      var stacked = prev !== null && prev - b.pos < 0.8;
+      prev = b.pos;
+      var label = b.far ? 'plus loin' : b.atStop && b.pos === n ? 'à quai' : 'bus ' + b.vehicle;
+      return '<span class="bus' + (b.far ? ' far' : '') + (b.atStop && b.pos === n ? ' docked' : '') +
+        (stacked ? ' stacked' : '') + (b.pos > n - 1.2 ? ' end' : '') +
+        '" style="left:' + (b.pos / n * 100) + '%;--line:' + l.color + ';--line-ink:' + l.text_color + '">' +
+        '<b>' + b.line + '</b><small>' + esc(label) + '</small></span>';
+    }).join('');
+    var note;
+    if (!state.vehicles && !state.vehiclesError) note = 'Lecture des positions…';
+    else if (!vp) note = 'Positions GPS indisponibles' + (state.vehiclesError ? ' (' + esc(state.vehiclesError) + ')' : '');
+    else if (!buses.length) note = 'Aucun bus C4 ou C6 sur les 6 derniers arrêts';
+    else note = 'Positions de ' + hms(vp.header.timestamp);
+    $('track-note').innerHTML = note;
+  }
+
   function feedAge() {
     return state.feed && state.feed.header.timestamp ? nowSec() - state.feed.header.timestamp : null;
   }
@@ -209,6 +267,7 @@
     var feed = usableFeed();
     if (state.schedule) board = Departures.buildBoard(state.schedule, feed, now, { perLine: CONFIG.perLine });
     renderBoard(now);
+    renderTrack();
 
     // feed status pill + banner
     var pill = $('feed-pill'), banner = $('banner'), age = feedAge(), msg = null, kind = 'warn', pillState, pillText;
@@ -262,14 +321,16 @@
     tickClock();
     loadSchedule();
     loadFeed();
+    loadVehicles();
     loadWeather();
     setInterval(tickClock, 1000);
     every(5, render);  // countdowns
     every(CONFIG.feedEverySec, function () { if (!document.hidden) loadFeed(); });
+    every(15, function () { if (!document.hidden) loadVehicles(); });
     every(CONFIG.weatherEverySec, loadWeather);
     every(CONFIG.scheduleEverySec, loadSchedule);
     document.addEventListener('visibilitychange', function () {
-      if (!document.hidden) { tickClock(); loadFeed(); render(); }
+      if (!document.hidden) { tickClock(); loadFeed(); loadVehicles(); render(); }
     });
     // A schedule error is retried quickly rather than waiting 6 h.
     every(60, function () { if (!state.schedule) loadSchedule(); });

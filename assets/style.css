@@ -188,20 +188,65 @@ body::after {
   grid-area: board;
   min-width: 0;
   display: flex; flex-direction: column;
-  gap: 14px;
-  padding-block: 18px;
+  gap: 10px;
+  padding-block: 16px;
 }
 .stop-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
 .stop-head .eyebrow { flex-basis: 100%; }
 .stop-name {
   font-weight: 800;
   font-stretch: 75%;
-  font-size: clamp(30px, 4.4vw, 44px);
+  font-size: clamp(28px, 3.6vw, 36px);
   line-height: 1;
   text-transform: uppercase;
   text-wrap: balance;
 }
 .stop-meta { font-family: var(--f-mono); font-size: 12px; color: var(--paper-dim); }
+
+/* live track: the six stops before ours, buses placed from their GPS fix */
+.track { display: flex; flex-direction: column; gap: 6px; }
+.track-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.track-note { font-family: var(--f-mono); font-size: 11px; color: var(--paper-faint); }
+.track-rail { position: relative; height: 62px; margin-inline: 6px 10px; }
+.track-rail::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 30px;
+  height: 2px; background: var(--paper-faint);
+}
+.track-stops li { position: absolute; top: 25px; width: 92px; margin-left: -46px; text-align: center; }
+.track-stops li i {
+  display: block; width: 12px; height: 12px; margin: 0 auto;
+  border-radius: 50%; background: var(--ink); border: 2px solid var(--paper-dim);
+}
+.track-stops li span {
+  display: block; margin-top: 4px;
+  font-family: var(--f-mono); font-size: 10px; line-height: 1.15; color: var(--paper-dim);
+}
+.track-stops li.first { margin-left: -6px; text-align: left; }
+.track-stops li.first i { margin: 0; }
+.track-stops li.last { margin-left: -86px; text-align: right; }
+.track-stops li.last i { margin: 0 0 0 auto; width: 16px; height: 16px; margin-top: -2px; border-color: var(--blood-hi); background: var(--blood); }
+.track-stops li.last span { color: var(--paper); font-weight: 500; }
+.track-buses .bus {
+  position: absolute; top: 0;
+  transform: translateX(-50%);
+  display: flex; align-items: center; gap: 5px;
+  transition: left 2s ease-in-out;
+}
+.track-buses .bus b {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 30px; height: 20px; padding-inline: 4px;
+  background: var(--line); color: var(--line-ink);
+  font-weight: 900; font-stretch: 75%; font-size: 13px;
+  box-shadow: 0 0 0 2px var(--ink);
+}
+.track-buses .bus small { font-family: var(--f-mono); font-size: 10px; color: var(--paper); white-space: nowrap; }
+.track-buses .bus.far { transform: none; opacity: .6; }
+.track-buses .bus.far b::before { content: "← "; }
+.track-buses .bus.docked b { animation: pulse 1.2s ease-in-out infinite; }
+.track-buses .bus.end { transform: translateX(calc(-100% + 15px)); flex-direction: row-reverse; }
+.track-buses .bus.stacked small { display: none; }
+.track-buses .bus.stacked { margin-left: -36px; }
+.track-buses .bus.stacked.end { margin-left: 0; margin-right: 36px; }
 
 .banner {
   font-family: var(--f-mono);
@@ -362,6 +407,7 @@ body::after {
   .dest { font-size: 17px; }
   .dest-sub { display: block; margin-left: 0; }
   .feed-pill { margin-left: 0; }
+  .track-stops li:not(.first):not(.last) span { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -14,6 +14,7 @@ Les horaires viennent uniquement des données officielles STAR. Rien n'est inven
 |---|---|---|---|
 | Temps réel | [STAR GTFS-RT Trip Updates](https://proxy.transport.data.gouv.fr/resource/star-rennes-integration-gtfs-rt-trip-update) (proxy officiel transport.data.gouv.fr) | Protobuf GTFS-RT 2.0 | Oui, réponse `Access-Control-Allow-Origin: *` |
 | Horaires théoriques | [GTFS STAR en cours](https://eu.ftp.opendatasoft.com/star/gtfs/GTFS_STAR_BUS_METRO_EN_COURS.zip), référencé sur [transport.data.gouv.fr](https://transport.data.gouv.fr/datasets/versions-des-horaires-theoriques-des-lignes-de-bus-et-de-metro-du-reseau-star-dans-les-formats-gtfs-et-netex-ainsi-que-les-urls-dacces-au-gtfs-rt-1) | GTFS (zip) → `data/schedule.json` | Fichier statique du site |
+| Bus en approche (GPS) | [STAR GTFS-RT Vehicle Positions](https://proxy.transport.data.gouv.fr/resource/star-rennes-integration-gtfs-rt-vehicle-position) | Protobuf GTFS-RT 2.0 | Oui (CORS `*`) |
 | Météo | [Open-Meteo](https://open-meteo.com/) | JSON | Oui, sans clé |
 
 **Aucun backend ni aucune clé n'est nécessaire.** Le flux GTFS-RT autorise les
@@ -58,6 +59,22 @@ Saint-Grégoire : elles sont volontairement exclues.
   (`zoneinfo` Europe/Paris), et l'affichage force `Europe/Paris` quel que soit le
   réglage de l'appareil.
 
+## Bus en approche
+
+Le C4 et le C6 empruntent les mêmes 6 arrêts avant Pont de Châteaudun
+(Tournebride → Les Préales → Plaine de Baud → François Château → Pont de
+Strasbourg → Robidou). Une piste unique montre les bus de ces deux lignes qui roulent
+vers l'arrêt, à partir du flux GPS STAR (rafraîchi toutes les 15 s) :
+
+- position = arrêt où le bus est à l'arrêt (`STOPPED_AT`), ou entre deux arrêts
+  par projection de sa position GPS sur le segment ;
+- seules les courses du tableau (bonne ligne, bon sens, bonne destination) sont
+  affichées. Une position GPS de plus de 5 min est ignorée ;
+- un bus suivi en temps réel qui n'est pas encore sur ces 6 arrêts apparaît
+  à gauche avec « ← plus loin ».
+
+La liste des arrêts est extraite du GTFS par `tools/build_schedule.py` (champ `tracks`).
+
 ## Lancer en local
 
 ```bash
@@ -73,9 +90,11 @@ fonctionne pas, car le navigateur bloque la lecture de `data/schedule.json` : il
 
 ```bash
 node tests/unit.js                   # fusion théorique / temps réel, annulations, retards, libellés
+node tests/track.js                  # placement des bus sur la piste (coordonnées réelles des arrêts)
 node tests/live_board.js             # télécharge le vrai flux et affiche le tableau C4 / C6
 pip install gtfs-realtime-bindings
 python3 tests/compare_decoder.py feed.pb   # compare le décodeur JS au décodeur de référence Google
+python3 tests/compare_vehicles.py vp.pb    # idem pour les positions GPS
 NODE_PATH=$(npm root -g) node tests/browser_check.js http://localhost:8000/   # Playwright, viewport iPad
 ```
 

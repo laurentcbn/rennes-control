@@ -112,7 +112,56 @@
     return m > 0 ? { text: '+' + m + ' min', kind: 'late' } : { text: '−' + (-m) + ' min', kind: 'early' };
   }
 
-  var api = { buildBoard: buildBoard, countdown: countdown, delayLabel: delayLabel, indexFeed: indexFeed };
+  /*
+   * Place the approaching buses on the shared track (stops upstream of ours).
+   * Uses the VehiclePositions feed: the stop the bus is at or heading to, and its
+   * GPS fix to interpolate between two stops. Only trips of our schedule (right
+   * line, direction and destination) are kept; buses that have passed our stop
+   * are dropped.
+   * returns [{ line, vehicle, pos (0 .. track.length-1), atStop, far }]
+   */
+  function trackPositions(schedule, vpFeed, nowSec, maxAgeSec) {
+    var out = [], track = schedule.tracks && (schedule.tracks.C4 || schedule.tracks.C6);
+    if (!vpFeed || !track) return out;
+    var trips = {};
+    schedule.departures.forEach(function (d) { trips[d.trip] = d.line; });
+    var index = {};
+    track.forEach(function (s, i) { index[s.id] = i; });
+    var last = track.length - 1;
+
+    vpFeed.entities.forEach(function (e) {
+      var v = e.vehicle;
+      if (!v || !v.trip || !trips[v.trip.tripId]) return;
+      if (v.timestamp && nowSec - v.timestamp > (maxAgeSec || 300)) return; // stale fix
+      var line = trips[v.trip.tripId], i = index[v.stopId];
+      var bus = { line: line, vehicle: (v.vehicle && (v.vehicle.label || v.vehicle.id)) || '?', trip: v.trip.tripId };
+      if (i === undefined) return;           // elsewhere on the route (or already past us)
+      if (v.currentStatus === 1) {           // STOPPED_AT
+        bus.pos = i; bus.atStop = true;
+      } else if (i === 0) {                  // heading to the first drawn stop: still further away
+        bus.pos = 0; bus.far = true;
+      } else {
+        bus.pos = i - 1 + segmentFraction(track[i - 1], track[i], v.position);
+      }
+      if (bus.pos > last) bus.pos = last;
+      out.push(bus);
+    });
+    out.sort(function (a, b) { return b.pos - a.pos; });
+    return out;
+  }
+
+  // Fraction (0..1) of the way from stop a to stop b, projecting the GPS fix on the segment.
+  function segmentFraction(a, b, p) {
+    if (!p || !p.latitude) return 0.5;
+    var k = Math.cos(a.lat * Math.PI / 180);
+    var ax = a.lon * k, ay = a.lat, bx = b.lon * k, by = b.lat, px = p.longitude * k, py = p.latitude;
+    var dx = bx - ax, dy = by - ay, len = dx * dx + dy * dy;
+    if (!len) return 0.5;
+    var t = ((px - ax) * dx + (py - ay) * dy) / len;
+    return Math.max(0.05, Math.min(0.95, t));
+  }
+
+  var api = { buildBoard: buildBoard, trackPositions: trackPositions, countdown: countdown, delayLabel: delayLabel, indexFeed: indexFeed };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Departures = api;
 })(this);

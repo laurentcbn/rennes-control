@@ -48,10 +48,17 @@
 
   <main class="board" aria-live="polite">
     <div class="stop-head">
-      <p class="eyebrow">Prochains départs</p>
       <h2 class="stop-name">Pont de Châteaudun</h2>
       <p class="stop-meta" id="stop-meta">Quai 1164 · sens Saint-Grégoire / Aéroport</p>
     </div>
+
+    <section class="track" id="track" aria-label="Bus en approche, positions GPS">
+      <p class="track-title"><span class="eyebrow">En approche · GPS</span> <span class="track-note" id="track-note">Lecture des positions…</span></p>
+      <div class="track-rail">
+        <ol class="track-stops" id="track-stops"></ol>
+        <div class="track-buses" id="track-buses"></div>
+      </div>
+    </section>
 
     <p class="banner" id="banner" hidden></p>
 

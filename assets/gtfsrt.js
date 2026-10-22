@@ -37,6 +37,13 @@
     return this.buf.subarray(start, this.pos);
   };
 
+  Reader.prototype.float32 = function () {
+    if (this.pos + 4 > this.buf.length) throw new Error('truncated float');
+    var v = new DataView(this.buf.buffer, this.buf.byteOffset + this.pos, 4).getFloat32(0, true);
+    this.pos += 4;
+    return v;
+  };
+
   Reader.prototype.skip = function (wire) {
     if (wire === 0) this.varint();
     else if (wire === 1) this.pos += 8;
@@ -95,10 +102,27 @@
     4: function (r, w, o) { o.timestamp = r.varint(); },
     5: function (r, w, o) { o.delay = signed32(r.varint()); }
   };
+  function float(r, w) { return w === 5 ? r.float32() : r.varint(); }
+  var Position = {
+    1: function (r, w, o) { o.latitude = float(r, w); },
+    2: function (r, w, o) { o.longitude = float(r, w); },
+    3: function (r, w, o) { o.bearing = float(r, w); },
+    5: function (r, w, o) { o.speed = float(r, w); }
+  };
+  var VehiclePosition = {
+    1: function (r, w, o) { o.trip = decode(r.bytes(), TripDescriptor, {}); },
+    2: function (r, w, o) { o.position = decode(r.bytes(), Position, {}); },
+    3: function (r, w, o) { o.currentStopSequence = r.varint(); },
+    4: function (r, w, o) { o.currentStatus = r.varint(); },
+    5: function (r, w, o) { o.timestamp = r.varint(); },
+    7: function (r, w, o) { o.stopId = str(r.bytes()); },
+    8: function (r, w, o) { o.vehicle = decode(r.bytes(), VehicleDescriptor, {}); }
+  };
   var FeedEntity = {
     1: function (r, w, o) { o.id = str(r.bytes()); },
     2: function (r, w, o) { o.isDeleted = !!r.varint(); },
-    3: function (r, w, o) { o.tripUpdate = decode(r.bytes(), TripUpdate, { stopTimeUpdates: [] }); }
+    3: function (r, w, o) { o.tripUpdate = decode(r.bytes(), TripUpdate, { stopTimeUpdates: [] }); },
+    4: function (r, w, o) { o.vehicle = decode(r.bytes(), VehiclePosition, { currentStatus: 2 }); }
   };
   var FeedHeader = {
     1: function (r, w, o) { o.version = str(r.bytes()); },
@@ -119,7 +143,8 @@
   var api = {
     decodeFeed: decodeFeed,
     TRIP: { SCHEDULED: 0, ADDED: 1, UNSCHEDULED: 2, CANCELED: 3, REPLACEMENT: 5, DUPLICATED: 6, DELETED: 7 },
-    STOP: { SCHEDULED: 0, SKIPPED: 1, NO_DATA: 2, UNSCHEDULED: 3 }
+    STOP: { SCHEDULED: 0, SKIPPED: 1, NO_DATA: 2, UNSCHEDULED: 3 },
+    VEHICLE: { INCOMING_AT: 0, STOPPED_AT: 1, IN_TRANSIT_TO: 2 }
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.GtfsRt = api;

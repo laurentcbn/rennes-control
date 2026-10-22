@@ -28,6 +28,7 @@ from zoneinfo import ZoneInfo
 GTFS_URL = "https://eu.ftp.opendatasoft.com/star/gtfs/GTFS_STAR_BUS_METRO_EN_COURS.zip"
 TZ = ZoneInfo("Europe/Paris")
 
+TRACK_STOPS = 7    # stops drawn on the live track: 6 upstream + Pont de Châteaudun
 STOP_ID = "7-1164"  # Pont de Châteaudun, quai sens 0 (vers Saint-Grégoire / Aéroport)
 LINES = {
     # route_id: (label, direction_id, accepted trip_headsign values, display destination)
@@ -110,8 +111,11 @@ def build(source):
     days = service_dates(g)
 
     deps = []
+    seqs = {}  # trip_id -> [(stop_sequence, stop_id)]
     for r in g.rows("stop_times.txt"):
         t = trips.get(r["trip_id"])
+        if t:
+            seqs.setdefault(r["trip_id"], []).append((int(r["stop_sequence"]), r["stop_id"]))
         if not t or r["stop_id"] != STOP_ID or r.get("pickup_type") == "1":
             continue
         label = LINES[t["route_id"]][0]
@@ -119,6 +123,21 @@ def build(source):
             ts = gtfs_time(day, r["departure_time"] or r["arrival_time"])
             deps.append({"trip": t["trip_id"], "line": label, "t": int(ts.timestamp())})
     deps.sort(key=lambda d: (d["t"], d["line"]))
+
+    # Live track: the most common stop pattern of each line, cut at our stop.
+    stops = {r["stop_id"]: r for r in g.rows("stops.txt")}
+    patterns = {}
+    for tid, seq in seqs.items():
+        ids = tuple(s for _, s in sorted(seq))
+        if STOP_ID in ids:
+            key = (LINES[trips[tid]["route_id"]][0], ids[:ids.index(STOP_ID) + 1][-TRACK_STOPS:])
+            patterns[key] = patterns.get(key, 0) + 1
+    tracks = {}
+    for (label, ids), n in sorted(patterns.items(), key=lambda kv: -kv[1]):
+        if label not in tracks:
+            tracks[label] = [{"id": i, "name": stops[i]["stop_name"],
+                              "lat": round(float(stops[i]["stop_lat"]), 6), "lon": round(float(stops[i]["stop_lon"]), 6)}
+                             for i in ids]
 
     return {
         "generated": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
@@ -135,6 +154,7 @@ def build(source):
                    "long_name": routes[rid]["route_long_name"]}
             for rid, v in LINES.items()
         },
+        "tracks": tracks,
         "departures": deps,
     }
 

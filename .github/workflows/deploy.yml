@@ -32,7 +32,7 @@ jobs:
         run: python3 tools/build_schedule.py
 
       - name: Unit tests
-        run: node tests/unit.js
+        run: node tests/unit.js && node tests/track.js
 
       - name: Live check (GTFS-RT feed)
         # A feed outage must not block publishing a fresh timetable.
