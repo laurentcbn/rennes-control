@@ -173,6 +173,14 @@ body::after {
   text-transform: uppercase;
   letter-spacing: .04em;
 }
+/* rain within the hour, from the 15-minute forecast */
+.w-rainnow { margin-top: 6px; font-family: var(--f-mono); font-size: 13px; color: var(--paper-dim); }
+.w-rainnow:empty { display: none; }
+.w-rainnow::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: var(--paper-faint); }
+.w-rainnow[data-kind="soon"] { color: var(--amber); }
+.w-rainnow[data-kind="soon"]::before { background: var(--amber); }
+.w-rainnow[data-kind="now"] { color: var(--paper); }
+.w-rainnow[data-kind="now"]::before { background: var(--blood-hi); }
 .weather[data-state="error"] .w-label { color: var(--paper-dim); font-weight: 400; text-transform: none; font-size: 14px; }
 .w-grid {
   margin-top: 14px;

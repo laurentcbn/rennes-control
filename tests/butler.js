@@ -11,6 +11,7 @@ const cases = [
   [{ C4: [dep('C4', 400, { status: 'live', delay: 300 })], C6: [] }, null, 14, 'Le C4 se fait désirer, 5 minutes de retard. Prenez votre temps.'],
   [{ C4: [], C6: [dep('C6', 400, { status: 'live', delay: -70 })] }, null, 14, 'Le C6 est en avance. Ne traînez pas.'],
   [{ C4: [dep('C4', 600)], C6: [] }, { code: 3, precipitation: 0, rainSoon: 80 }, 14, 'La pluie s’annonce. Prenez un parapluie, au cas où.'],
+  [{ C4: [dep('C4', 600)], C6: [] }, { code: 3, precipitation: 0, rainIn: 20 }, 14, 'Pluie dans 20 minutes. Prenez un parapluie.'],
   [{ C4: [dep('C4', 600)], C6: [] }, null, 7, 'Tout est en ordre. Belle journée.'],
   [{ C4: [dep('C4', 600)], C6: [] }, null, 22, 'Tout roule. Bonne soirée.'],
   [{ C4: [dep('C4', 1500)], C6: [] }, null, 15, 'Le prochain bus est dans 25 minutes. Un café ?'],

@@ -13,6 +13,7 @@
       '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,precipitation' +
       '&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max' +
       '&hourly=temperature_2m,precipitation_probability' +
+      '&minutely_15=precipitation&forecast_minutely_15=12' +
       '&timezone=Europe%2FParis&forecast_days=2',
     feedEverySec: 30,       // STAR feed is regenerated about every 30 s
     weatherEverySec: 900,
@@ -161,7 +162,12 @@
         var p = d.precipitation_probability_max && d.precipitation_probability_max[0];
         $('w-rain').textContent = (p === null || p === undefined ? '–' : p + ' %') + (c.precipitation > 0 ? ' · ' + c.precipitation + ' mm' : '');
         renderHours(w.hourly, c.time);
-        state.weather = { code: c.weather_code, precipitation: c.precipitation, rainSoon: nextHourRain(w.hourly, c.time) };
+        var outlook = Rain.rainOutlook(w.minutely_15, c.time);
+        var rn = $('w-rainnow');
+        rn.textContent = outlook ? outlook.text : '';
+        rn.setAttribute('data-kind', !outlook ? '' : outlook.now ? 'now' : outlook.inMin !== null ? 'soon' : 'dry');
+        state.weather = { code: c.weather_code, precipitation: c.precipitation, rainSoon: nextHourRain(w.hourly, c.time),
+          rainIn: outlook && !outlook.now ? outlook.inMin : null };
         renderButler();
         box.setAttribute('data-state', 'ok');
       })

@@ -38,6 +38,8 @@
     if (raining && wait <= 900) return 'Il pleut. Parapluie, et on y va.';
     if (next.status === 'live' && next.delay >= 180) return 'Le ' + next.line + ' se fait désirer, ' + Math.round(next.delay / 60) + ' minutes de retard. Prenez votre temps.';
     if (next.status === 'live' && next.delay <= -60) return 'Le ' + next.line + ' est en avance. Ne traînez pas.';
+    if (weather && weather.rainIn !== null && weather.rainIn !== undefined && weather.rainIn <= 30 && wait <= 1800)
+      return weather.rainIn < 5 ? 'La pluie arrive. Parapluie, sans hésiter.' : 'Pluie dans ' + Math.round(weather.rainIn / 5) * 5 + ' minutes. Prenez un parapluie.';
     if (rainSoon && wait <= 1800) return 'La pluie s’annonce. Prenez un parapluie, au cas où.';
     if (hour >= 5 && hour < 10) return 'Tout est en ordre. Belle journée.';
     if (hour >= 21 || hour < 5) return 'Tout roule. Bonne soirée.';

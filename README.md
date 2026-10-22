@@ -88,6 +88,14 @@ Pont de Châteaudun sont affichées :
   pointillés orange sur la piste). Plusieurs alertes défilent toutes les 8 s ;
 - les alertes sur des arrêts éloignés des lignes sont ignorées.
 
+## Pluie dans l'heure
+
+Sous la météo, une ligne répond à « va-t-il pleuvoir dans l'heure, et combien de
+temps ? » à partir de la prévision de précipitations par quart d'heure d'Open-Meteo
+(`minutely_15`, modèle Météo-France pour la France) : « Pas de pluie dans
+l'heure », « Pluie dans 20 min · pendant ~45 min », « Il pleut · encore ~30 min ».
+Seuil : 0,1 mm par quart d'heure (`assets/rain.js`, testé dans `tests/rain.js`).
+
 ## Bars du centre-ville
 
 De 16h à 3h, le bloc « heure par heure » laisse la place à « Ce soir · bars » :
@@ -122,6 +130,7 @@ node tests/track.js                  # placement des bus sur la piste (coordonn�
 node tests/alerts.js                 # tri des alertes (grève annoncée, travaux, alertes hors zone)
 node tests/butler.js                 # phrases du majordome
 node tests/bars.js                   # ouverture des bars (y compris après minuit)
+node tests/rain.js                   # pluie dans l'heure (quarts d'heure)
 node tests/live_board.js             # télécharge le vrai flux et affiche le tableau C4 / C6
 pip install gtfs-realtime-bindings
 python3 tests/compare_decoder.py feed.pb   # compare le décodeur JS au décodeur de référence Google
