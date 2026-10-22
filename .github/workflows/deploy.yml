@@ -1,0 +1,59 @@
+# Rebuilds the theoretical timetable from the official STAR GTFS every night,
+# runs the tests against the live GTFS-RT feed, and publishes to GitHub Pages.
+name: Build & deploy Rennes Control
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 2 * * *"   # every night (UTC); STAR publishes a new GTFS weekly
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+
+      - name: Build timetable from STAR GTFS
+        run: python3 tools/build_schedule.py
+
+      - name: Unit tests
+        run: node tests/unit.js
+
+      - name: Live check (GTFS-RT feed)
+        # A feed outage must not block publishing a fresh timetable.
+        continue-on-error: true
+        run: node tests/live_board.js
+
+      - name: Prepare site
+        run: |
+          mkdir -p _site
+          cp -r index.html assets data _site/
+          touch _site/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: _site }
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

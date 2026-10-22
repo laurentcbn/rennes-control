@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Rennes Control">
+<meta name="theme-color" content="#0b0a09">
+<title>Rennes Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..900&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="frame">
+
+  <header class="mast">
+    <h1 class="brand">Rennes<span>Control</span></h1>
+    <p class="mast-date" id="date">&nbsp;</p>
+    <p class="feed-pill" id="feed-pill" data-state="loading"><i></i><span>Connexion au flux STAR</span></p>
+  </header>
+
+  <aside class="side">
+    <section class="clock" aria-label="Heure de Rennes">
+      <p class="clock-time" id="clock">--:--</p>
+      <p class="clock-sec"><span id="clock-sec">--</span> s · heure de Paris</p>
+    </section>
+
+    <section class="weather" id="weather" data-state="loading" aria-label="Météo à Rennes">
+      <p class="eyebrow">Météo · Rennes</p>
+      <p class="w-temp"><span id="w-temp">--</span><sup>°C</sup></p>
+      <p class="w-label" id="w-label">Chargement…</p>
+      <dl class="w-grid">
+        <div><dt>Min / max</dt><dd id="w-range">–</dd></div>
+        <div><dt>Ressenti</dt><dd id="w-feel">–</dd></div>
+        <div><dt>Vent</dt><dd id="w-wind">–</dd></div>
+        <div><dt>Pluie</dt><dd id="w-rain">–</dd></div>
+      </dl>
+    </section>
+  </aside>
+
+  <main class="board" aria-live="polite">
+    <div class="stop-head">
+      <p class="eyebrow">Prochains départs</p>
+      <h2 class="stop-name">Pont de Châteaudun</h2>
+      <p class="stop-meta" id="stop-meta">Quai 1164 · sens Saint-Grégoire / Aéroport</p>
+    </div>
+
+    <p class="banner" id="banner" hidden></p>
+
+    <section class="line" id="line-C4" data-line="C4">
+      <header class="line-head">
+        <span class="badge" style="--line:#6F2282;--line-ink:#fff">C4</span>
+        <p class="dest"><span class="arrow">→</span> <span class="dest-name">Saint-Grégoire</span> <span class="dest-sub">Grand Quartier</span></p>
+      </header>
+      <ol class="deps"><li class="state">Chargement des horaires…</li></ol>
+    </section>
+
+    <section class="line" id="line-C6" data-line="C6">
+      <header class="line-head">
+        <span class="badge" style="--line:#61C3D9;--line-ink:#1A171B">C6</span>
+        <p class="dest"><span class="arrow">→</span> <span class="dest-name">Saint-Jacques-de-la-Lande</span> <span class="dest-sub">Aéroport</span></p>
+      </header>
+      <ol class="deps"><li class="state">Chargement des horaires…</li></ol>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p class="legend">
+      <span class="tag tag-live"><i></i>Temps réel</span> bus suivi par GPS, horaire recalculé
+      <span class="tag tag-sched">Théorique</span> horaire prévu, aucun bus suivi
+    </p>
+    <p class="fresh" id="fresh">Données STAR : en attente</p>
+  </footer>
+
+</div>
+<script src="assets/gtfsrt.js"></script>
+<script src="assets/departures.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
