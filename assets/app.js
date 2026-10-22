@@ -129,8 +129,11 @@
     $('bars').hidden = !show;
     $('hours').hidden = !!show;
     if (!show) return;
-    $('bar-list').innerHTML = state.bars.map(function (b) {
-      var st = Bars.barStatus(b, day, minute);
+    // Open bars first, otherwise the order of data/bars.json.
+    var list = state.bars.map(function (b, i) { return { bar: b, i: i, st: Bars.barStatus(b, day, minute) }; })
+      .sort(function (a, b) { return (b.st.open - a.st.open) || (a.i - b.i); });
+    $('bar-list').innerHTML = list.map(function (x) {
+      var b = x.bar, st = x.st;
       var cls = st.open ? (st.closingSoon ? 'soon' : 'open') : 'closed';
       return '<li class="bar ' + cls + '"><i></i><span class="bar-name">' + esc(b.name) + '</span><span class="bar-state">' + esc(st.text) + '</span></li>';
     }).join('');
@@ -370,9 +373,17 @@
       lists[0][lists[0].length - 1].hidden = true;
     }
   }
-  window.addEventListener('resize', function () { fitBoard(); });
+  // Same for the left column: closed bars (listed last) go first.
+  function fitSide() {
+    var el = document.querySelector('.side');
+    var bars = [].slice.call(el.querySelectorAll('.bar'));
+    bars.forEach(function (b) { b.hidden = false; });
+    if (window.innerWidth < 900) return;
+    for (var i = bars.length - 1; i >= 1 && el.scrollHeight > el.clientHeight + 1; i--) bars[i].hidden = true;
+  }
+  window.addEventListener('resize', function () { fitBoard(); fitSide(); });
   // Web fonts change line heights: fit again once they are in.
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { fitBoard(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { fitBoard(); fitSide(); });
 
   var board = {};
   function render() {
@@ -384,6 +395,7 @@
     renderAlerts(now);
     renderBars();
     fitBoard();
+    fitSide();
     renderButler();
 
     // feed status pill + banner
