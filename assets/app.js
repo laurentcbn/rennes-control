@@ -102,6 +102,24 @@
     list.innerHTML = html;
   }
 
+  function nextHourRain(h, currentTime) {
+    if (!h || !h.time || !h.precipitation_probability) return null;
+    for (var i = 0; i < h.time.length; i++) if (h.time[i] > currentTime) return h.precipitation_probability[i];
+    return null;
+  }
+
+  /* ── the butler ───────────────────────────── */
+  var fmtHour = new Intl.DateTimeFormat('fr-FR', { timeZone: TZ, hour: '2-digit', hour12: false });
+  function renderButler() {
+    var el = $('butler');
+    var line = state.schedule && !state.feedLoading
+      ? Butler.butlerLine(board, state.weather || null, nowSec(), parseInt(fmtHour.format(new Date()), 10) % 24) : null;
+    if (!line || el.getAttribute('data-line') === line) return;
+    el.setAttribute('data-line', line);
+    el.classList.remove('show');
+    setTimeout(function () { el.textContent = line; el.classList.add('show'); }, el.textContent ? 400 : 0);
+  }
+
   function loadWeather() {
     var box = $('weather');
     fetchWithTimeout(CONFIG.weatherUrl, { cache: 'no-store' })
@@ -116,6 +134,8 @@
         var p = d.precipitation_probability_max && d.precipitation_probability_max[0];
         $('w-rain').textContent = (p === null || p === undefined ? '–' : p + ' %') + (c.precipitation > 0 ? ' · ' + c.precipitation + ' mm' : '');
         renderHours(w.hourly, c.time);
+        state.weather = { code: c.weather_code, precipitation: c.precipitation, rainSoon: nextHourRain(w.hourly, c.time) };
+        renderButler();
         box.setAttribute('data-state', 'ok');
       })
       .catch(function (e) {
@@ -261,6 +281,22 @@
     });
   }
 
+  // Single-screen layout: drop the last departure of the longest line until the board fits.
+  function fitBoard() {
+    var el = document.querySelector('.board');
+    var deps = [].slice.call(el.querySelectorAll('.dep'));
+    deps.forEach(function (d) { d.hidden = false; });
+    if (window.innerWidth < 900) return;
+    for (var guard = 0; guard < 8 && el.scrollHeight > el.clientHeight + 1; guard++) {
+      var lists = [].slice.call(el.querySelectorAll('.deps')).map(function (l) {
+        return [].slice.call(l.querySelectorAll('.dep')).filter(function (d) { return !d.hidden && getComputedStyle(d).display !== 'none'; });
+      }).sort(function (a, b) { return b.length - a.length; });
+      if (!lists.length || lists[0].length <= 1) break;
+      lists[0][lists[0].length - 1].hidden = true;
+    }
+  }
+  window.addEventListener('resize', function () { fitBoard(); });
+
   var board = {};
   function render() {
     var now = nowSec();
@@ -268,6 +304,8 @@
     if (state.schedule) board = Departures.buildBoard(state.schedule, feed, now, { perLine: CONFIG.perLine });
     renderBoard(now);
     renderTrack();
+    fitBoard();
+    renderButler();
 
     // feed status pill + banner
     var pill = $('feed-pill'), banner = $('banner'), age = feedAge(), msg = null, kind = 'warn', pillState, pillText;

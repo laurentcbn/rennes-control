@@ -28,6 +28,7 @@ const { chromium } = require('playwright');
   await page.waitForTimeout(+(process.env.WAIT || 2500));
   const info = await page.evaluate(() => ({
     pill: document.getElementById('feed-pill').innerText,
+    butler: document.getElementById('butler').innerText,
     banner: document.getElementById('banner').hidden ? null : document.getElementById('banner').innerText,
     fresh: document.getElementById('fresh').innerText,
     weather: document.getElementById('weather').innerText.replace(/\n+/g, ' | '),

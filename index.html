@@ -10,7 +10,7 @@
 <title>Rennes Control</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..900&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..900&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@1&display=swap">
 <link rel="stylesheet" href="assets/style.css?v=dev">
 </head>
 <body>
@@ -19,6 +19,7 @@
   <header class="mast">
     <h1 class="brand">Rennes<span>Control</span></h1>
     <p class="mast-date" id="date">&nbsp;</p>
+    <p class="butler" id="butler" aria-live="polite"></p>
     <p class="feed-pill" id="feed-pill" data-state="loading"><i></i><span>Connexion au flux STAR</span></p>
   </header>
 
@@ -90,6 +91,7 @@
 </div>
 <script src="assets/gtfsrt.js?v=dev"></script>
 <script src="assets/departures.js?v=dev"></script>
+<script src="assets/butler.js?v=dev"></script>
 <script src="assets/app.js?v=dev"></script>
 </body>
 </html>
