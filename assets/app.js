@@ -156,6 +156,8 @@
     fetchWithTimeout(CONFIG.weatherUrl, { cache: 'no-store' })
       .then(function (r) { return r.json(); })
       .then(function (w) {
+        // Open-Meteo reports quota and parameter errors as JSON { error, reason }.
+        if (!w || w.error || !w.current || !w.daily) throw new Error(w && w.reason ? 'service saturé' : 'réponse incomplète');
         var c = w.current, d = w.daily;
         $('w-temp').textContent = Math.round(c.temperature_2m);
         $('w-label').textContent = WMO[c.weather_code] || '—';

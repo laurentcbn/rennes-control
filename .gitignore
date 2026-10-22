@@ -1,4 +1,5 @@
 __pycache__/
 *.pb
-screenshot.png
+/screenshot.png
 _site/
+brag-output*/

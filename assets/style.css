@@ -101,10 +101,11 @@ body::after {
   min-width: 0;
   font-family: var(--f-voice);
   font-style: italic;
-  font-size: 22px;
+  font-size: 20px;
   line-height: 1.15;
   color: var(--paper);
   text-align: right;
+  text-wrap: balance;
   opacity: 0;
   transform: translateY(4px);
   transition: opacity .4s ease, transform .4s ease;
