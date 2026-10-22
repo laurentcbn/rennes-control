@@ -41,7 +41,12 @@
       </dl>
     </section>
 
-    <section class="hours" aria-label="Prévisions heure par heure">
+    <section class="bars" id="bars" aria-label="Bars du centre-ville" hidden>
+      <p class="eyebrow">Ce soir · bars <span class="bars-note">horaires habituels</span></p>
+      <ol class="bar-list" id="bar-list"></ol>
+    </section>
+
+    <section class="hours" id="hours" aria-label="Prévisions heure par heure">
       <p class="eyebrow">Heure par heure · pluie</p>
       <ol class="h-list" id="w-hours"></ol>
     </section>
@@ -94,6 +99,7 @@
 <script src="assets/gtfsrt.js?v=dev"></script>
 <script src="assets/departures.js?v=dev"></script>
 <script src="assets/butler.js?v=dev"></script>
+<script src="assets/bars.js?v=dev"></script>
 <script src="assets/app.js?v=dev"></script>
 </body>
 </html>

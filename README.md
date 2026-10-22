@@ -88,6 +88,15 @@ Pont de Châteaudun sont affichées :
   pointillés orange sur la piste). Plusieurs alertes défilent toutes les 8 s ;
 - les alertes sur des arrêts éloignés des lignes sont ignorées.
 
+## Bars du centre-ville
+
+De 16h à 3h, le bloc « heure par heure » laisse la place à « Ce soir · bars » :
+ouvert / ferme bientôt / ouvre à…, calculé en heure de Paris (fermetures après
+minuit gérées). Les horaires sont dans `data/bars.json` : ce sont des horaires
+**habituels**, repris de schlouk-map.com (oct. 2026), non officiels et parfois
+contradictoires d'un site à l'autre. Il suffit de modifier ce fichier pour
+corriger un horaire ou ajouter un bar.
+
 ## Le majordome
 
 Une phrase en haut de l'écran commente la situation réelle : grève, bus imminent,
@@ -112,6 +121,7 @@ node tests/unit.js                   # fusion théorique / temps réel, annulati
 node tests/track.js                  # placement des bus sur la piste (coordonnées réelles des arrêts)
 node tests/alerts.js                 # tri des alertes (grève annoncée, travaux, alertes hors zone)
 node tests/butler.js                 # phrases du majordome
+node tests/bars.js                   # ouverture des bars (y compris après minuit)
 node tests/live_board.js             # télécharge le vrai flux et affiche le tableau C4 / C6
 pip install gtfs-realtime-bindings
 python3 tests/compare_decoder.py feed.pb   # compare le décodeur JS au décodeur de référence Google

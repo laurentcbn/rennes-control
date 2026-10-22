@@ -1,0 +1,23 @@
+{
+  "_note": "Horaires habituels, à corriger si besoin. days: mon tue wed thu fri sat sun ; une fermeture après minuit (ex. 01:00) compte pour la nuit du jour indiqué. Source initiale : schlouk-map.com (oct. 2026), non officielle.",
+  "bars": [
+    {
+      "name": "La Cour",
+      "address": "18 rue de Penhoët",
+      "hours": { "mon": [], "tue": [["11:00", "01:00"]], "wed": [["11:00", "01:00"]], "thu": [["11:00", "01:00"]],
+                 "fri": [["11:00", "01:00"]], "sat": [["11:00", "01:00"]], "sun": [["16:00", "21:00"]] }
+    },
+    {
+      "name": "Melody Maker",
+      "address": "14 rue Saint-Melaine",
+      "hours": { "mon": [["11:30", "01:00"]], "tue": [["11:30", "01:00"]], "wed": [["11:30", "01:00"]], "thu": [["11:30", "01:00"]],
+                 "fri": [["11:30", "01:00"]], "sat": [["15:00", "01:00"]], "sun": [] }
+    },
+    {
+      "name": "Le Bateau Ivre",
+      "address": "28 rue de la Visitation",
+      "hours": { "mon": [["17:00", "00:45"]], "tue": [["17:00", "00:45"]], "wed": [["17:00", "00:45"]], "thu": [["17:00", "00:45"]],
+                 "fri": [["17:00", "00:45"]], "sat": [["12:00", "01:00"]], "sun": [] }
+    }
+  ]
+}

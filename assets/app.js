@@ -8,6 +8,7 @@
     vehiclesUrl: 'https://proxy.transport.data.gouv.fr/resource/star-rennes-integration-gtfs-rt-vehicle-position',
     alertsUrl: 'https://proxy.transport.data.gouv.fr/resource/star-rennes-integration-gtfs-rt-alerts',
     scheduleUrl: 'data/schedule.json',
+    barsUrl: 'data/bars.json',
     weatherUrl: 'https://api.open-meteo.com/v1/forecast?latitude=48.1113&longitude=-1.6800' +
       '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,precipitation' +
       '&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max' +
@@ -107,6 +108,31 @@
     if (!h || !h.time || !h.precipitation_probability) return null;
     for (var i = 0; i < h.time.length; i++) if (h.time[i] > currentTime) return h.precipitation_probability[i];
     return null;
+  }
+
+  /* ── bars (evening, instead of the hourly forecast) ── */
+  var fmtWeekday = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, weekday: 'short' });
+  var fmtHourMin = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false });
+  function loadBars() {
+    return fetchWithTimeout(CONFIG.barsUrl + '?h=' + Math.floor(Date.now() / 3600000))
+      .then(function (r) { return r.json(); })
+      .then(function (b) { state.bars = b.bars || []; renderBars(); })
+      .catch(function () { state.bars = null; renderBars(); });
+  }
+  function renderBars() {
+    var d = new Date();
+    var day = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(fmtWeekday.format(d));
+    var hm2 = fmtHourMin.format(d).split(':'), minute = (+hm2[0] % 24) * 60 + +hm2[1];
+    var evening = minute >= 16 * 60 || minute < 3 * 60;
+    var show = evening && state.bars && state.bars.length && day >= 0;
+    $('bars').hidden = !show;
+    $('hours').hidden = !!show;
+    if (!show) return;
+    $('bar-list').innerHTML = state.bars.map(function (b) {
+      var st = Bars.barStatus(b, day, minute);
+      var cls = st.open ? (st.closingSoon ? 'soon' : 'open') : 'closed';
+      return '<li class="bar ' + cls + '"><i></i><span class="bar-name">' + esc(b.name) + '</span><span class="bar-state">' + esc(st.text) + '</span></li>';
+    }).join('');
   }
 
   /* ── the butler ───────────────────────────── */
@@ -350,6 +376,7 @@
     renderBoard(now);
     renderTrack();
     renderAlerts(now);
+    renderBars();
     fitBoard();
     renderButler();
 
@@ -407,6 +434,7 @@
     loadFeed();
     loadVehicles();
     loadAlerts();
+    loadBars();
     loadWeather();
     setInterval(tickClock, 1000);
     every(5, render);  // countdowns
@@ -416,6 +444,7 @@
     every(8, function () { if (alerts.local.length > 1) { alertTurn++; render(); } });
     every(CONFIG.weatherEverySec, loadWeather);
     every(CONFIG.scheduleEverySec, loadSchedule);
+    every(CONFIG.scheduleEverySec, loadBars);
     document.addEventListener('visibilitychange', function () {
       if (!document.hidden) { tickClock(); loadFeed(); loadVehicles(); render(); }
     });

@@ -187,6 +187,24 @@ body::after {
 }
 .w-grid dd { font-family: var(--f-mono); font-size: 14px; margin-top: 2px; }
 
+/* evening: bars list replaces the hourly forecast */
+.bars { flex: 1 1 auto; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--rule); padding-top: 14px; }
+.bars-note { color: var(--paper-faint); letter-spacing: .06em; text-transform: none; margin-left: 6px; }
+.bar-list { display: flex; flex-direction: column; }
+.bar {
+  display: grid; grid-template-columns: 10px 1fr; align-items: center; gap: 2px 10px;
+  padding-block: 8px; border-top: 1px solid var(--rule);
+}
+.bar:first-child { border-top: 0; padding-top: 2px; }
+.bar i { width: 8px; height: 8px; border-radius: 50%; background: var(--paper-faint); align-self: center; }
+.bar-name { font-weight: 700; font-stretch: 80%; font-size: 19px; text-transform: uppercase; letter-spacing: .02em; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-state { grid-column: 2; font-family: var(--f-mono); font-size: 11px; color: var(--paper-dim); white-space: nowrap; }
+.bar.open i { background: var(--blood-hi); }
+.bar.open .bar-state { color: var(--paper); }
+.bar.soon i { background: var(--amber); }
+.bar.soon .bar-state { color: var(--amber); }
+.bar.closed .bar-name { color: var(--paper-dim); }
+
 /* hourly forecast: six columns, rain probability as a red gauge */
 .hours { display: flex; flex-direction: column; gap: 10px; min-height: 0; border-top: 1px solid var(--rule); padding-top: 14px; }
 .h-list { flex: 1 1 auto; display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; min-height: 96px; }
@@ -418,7 +436,7 @@ body::after {
     grid-template-areas: "mast mast" "side board" "foot foot";
   }
   .side { border-top: 0; border-right: 1px solid var(--rule); padding-right: 24px; }
-  .hours { flex: 1 1 auto; }
+  .hours, .bars { flex: 1 1 auto; }
   .board { overflow: hidden; }
 }
 @media (min-width: 900px) {

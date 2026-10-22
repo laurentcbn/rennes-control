@@ -29,6 +29,7 @@ const { chromium } = require('playwright');
   const info = await page.evaluate(() => ({
     pill: document.getElementById('feed-pill').innerText,
     butler: document.getElementById('butler').innerText,
+    bars: document.getElementById('bars').hidden ? '(hidden)' : document.getElementById('bars').innerText.replace(/\n+/g, ' | '),
     banner: document.getElementById('banner').hidden ? null : document.getElementById('banner').innerText,
     fresh: document.getElementById('fresh').innerText,
     weather: document.getElementById('weather').innerText.replace(/\n+/g, ' | '),
