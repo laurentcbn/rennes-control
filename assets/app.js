@@ -9,6 +9,12 @@
     alertsUrl: 'https://proxy.transport.data.gouv.fr/resource/star-rennes-integration-gtfs-rt-alerts',
     scheduleUrl: 'data/schedule.json',
     barsUrl: 'data/bars.json',
+    // Official DIR Ouest traffic cameras on the Rennes ring road, published by Bison Futé
+    // (30 s clips, renewed every 2 min). Closest to Pont de Châteaudun first.
+    camBase: 'https://www.bison-fute.gouv.fr/camera-upload/',
+    cams: [{ id: 'dirouest_camera7', name: 'Maurepas' }, { id: 'dirouest_camera1', name: 'Bréquigny' }, { id: 'dirouest_camera4', name: 'Tizé' }],
+    camEverySec: 120,
+    sideRotateSec: 20,
     weatherUrl: 'https://api.open-meteo.com/v1/forecast?latitude=48.1113&longitude=-1.6800' +
       '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,precipitation' +
       '&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max' +
@@ -120,14 +126,47 @@
       .then(function (b) { state.bars = b.bars || []; renderBars(); })
       .catch(function () { state.bars = null; renderBars(); });
   }
+  /* ── ring-road camera (alternates with the hourly forecast / bars) ── */
+  var cam = { i: 0, loadedAt: 0, ready: false, error: null, url: null, pinnedUntil: 0, loading: false };
+  function loadCam() {
+    if (cam.loading) return;
+    cam.loading = true;
+    var c = CONFIG.cams[cam.i];
+    fetchWithTimeout(CONFIG.camBase + c.id + '.mp4?t=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) {
+        var lm = r.headers.get('Last-Modified');
+        return r.blob().then(function (b) { return { blob: b, lm: lm ? Math.floor(new Date(lm).getTime() / 1000) : null }; });
+      })
+      .then(function (x) {
+        if (cam.url) URL.revokeObjectURL(cam.url);
+        cam.url = URL.createObjectURL(x.blob);
+        var v = $('cam-video');
+        v.src = cam.url;
+        var p = v.play(); if (p && p.catch) p.catch(function () {});
+        cam.ready = true; cam.error = null; cam.loadedAt = nowSec();
+        $('cam-name').textContent = c.name;
+        $('cam-meta').textContent = 'Images Bison Futé' + (x.lm ? ' de ' + hm(x.lm) : '') + ' · toucher pour changer';
+      })
+      .catch(function (e) { cam.error = e.message; cam.loadedAt = nowSec(); })
+      .then(function () { cam.loading = false; renderBars(); });
+  }
+
   function renderBars() {
     var d = new Date();
     var day = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(fmtWeekday.format(d));
     var hm2 = fmtHourMin.format(d).split(':'), minute = (+hm2[0] % 24) * 60 + +hm2[1];
     var evening = minute >= 16 * 60 || minute < 3 * 60;
     var show = evening && state.bars && state.bars.length && day >= 0;
-    $('bars').hidden = !show;
-    $('hours').hidden = !!show;
+    // every other 20 s slot (or for 30 s after a tap) the camera takes the place of the panel
+    var showCam = cam.ready && !cam.error && (Date.now() < cam.pinnedUntil || Math.floor(Date.now() / 1000 / CONFIG.sideRotateSec) % 2 === 1);
+    $('camsec').hidden = !showCam;
+    $('bars').hidden = !show || showCam;
+    $('hours').hidden = !!show || showCam;
+    var v = $('cam-video');
+    if (showCam) {
+      if (nowSec() - cam.loadedAt > CONFIG.camEverySec) loadCam();
+      if (v.paused) { var p = v.play(); if (p && p.catch) p.catch(function () {}); }
+    } else if (!v.paused) v.pause();
     if (!show) return;
     // Open bars first, otherwise the order of data/bars.json.
     var list = state.bars.map(function (b, i) { return { bar: b, i: i, st: Bars.barStatus(b, day, minute) }; })
@@ -461,6 +500,7 @@
     loadVehicles();
     loadAlerts();
     loadBars();
+    loadCam();
     loadWeather();
     setInterval(tickClock, 1000);
     every(5, render);  // countdowns
@@ -471,6 +511,14 @@
     every(CONFIG.weatherEverySec, loadWeather);
     every(CONFIG.scheduleEverySec, loadSchedule);
     every(CONFIG.scheduleEverySec, loadBars);
+    every(5, renderBars);   // side panel rotation
+    // a failed camera is retried every 2 min
+    every(CONFIG.camEverySec, function () { if (cam.error && !document.hidden) loadCam(); });
+    $('cam-frame').addEventListener('click', function () {
+      cam.i = (cam.i + 1) % CONFIG.cams.length;
+      cam.pinnedUntil = Date.now() + 30000;
+      loadCam();
+    });
     document.addEventListener('visibilitychange', function () {
       if (!document.hidden) { tickClock(); loadFeed(); loadVehicles(); render(); }
     });

@@ -214,6 +214,14 @@ body::after {
 .bar.soon .bar-state { color: var(--amber); }
 .bar.closed .bar-name { color: var(--paper-dim); }
 
+/* ring-road camera, alternating with the hourly forecast / bars */
+.camsec { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--rule); padding-top: 14px; }
+.cam-frame { position: relative; flex: 1 1 0; min-height: 90px; padding: 0; border: 1px solid var(--rule); background: var(--ink-2); overflow: hidden; cursor: pointer; display: block; width: 100%; }
+.cam-frame:focus-visible { outline: 2px solid var(--paper); outline-offset: 2px; }
+.cam-frame video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: saturate(.85) contrast(1.05); }
+.cam-meta { position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 8px 5px; text-align: left;
+  font-family: var(--f-mono); font-size: 10px; color: var(--paper); background: linear-gradient(0deg, rgba(11,10,9,.85), rgba(11,10,9,0)); }
+
 /* hourly forecast: six columns, rain probability as a red gauge */
 .hours { display: flex; flex-direction: column; gap: 10px; min-height: 0; border-top: 1px solid var(--rule); padding-top: 14px; }
 .h-list { flex: 1 1 auto; display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; min-height: 96px; }
@@ -445,7 +453,7 @@ body::after {
     grid-template-areas: "mast mast" "side board" "foot foot";
   }
   .side { border-top: 0; border-right: 1px solid var(--rule); padding-right: 24px; min-height: 0; overflow: hidden; }
-  .hours, .bars { flex: 1 1 auto; }
+  .hours, .bars, .camsec { flex: 1 1 auto; }
   .board { overflow: hidden; }
 }
 @media (min-width: 900px) {

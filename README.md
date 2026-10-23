@@ -34,6 +34,7 @@ estimates a departure, and it never presents a timetable as real time.
 | Strikes, works | [STAR GTFS-RT Alerts](https://proxy.transport.data.gouv.fr/resource/star-rennes-integration-gtfs-rt-alerts) | GTFS-RT 2.0 Protobuf | Yes (CORS `*`) |
 | Timetable | [Current STAR GTFS](https://eu.ftp.opendatasoft.com/star/gtfs/GTFS_STAR_BUS_METRO_EN_COURS.zip), listed on [transport.data.gouv.fr](https://transport.data.gouv.fr/datasets/versions-des-horaires-theoriques-des-lignes-de-bus-et-de-metro-du-reseau-star-dans-les-formats-gtfs-et-netex-ainsi-que-les-urls-dacces-au-gtfs-rt-1) | GTFS zip → `data/schedule.json` | Static file of the site |
 | Weather | [Open-Meteo](https://open-meteo.com/) (Météo-France model for the 15-minute rain forecast) | JSON | Yes, no key |
+| Ring-road cameras | [Bison Futé](https://www.bison-fute.gouv.fr) (DIR Ouest cameras N136 Maurepas, Bréquigny, Tizé), `camera-upload/dirouest_cameraN.mp4` | 30 s H.264 clip, renewed every 2 min | Yes (CORS `*`) |
 | Bar opening hours | `data/bars.json`, usual hours taken from [Schlouk Map](https://www.schlouk-map.com/) | JSON | Static file |
 
 **No backend and no API key.** The GTFS-RT feeds allow cross-origin requests, so the
@@ -119,6 +120,19 @@ soon / opens at…, computed in Paris time, closing times after midnight include
 Open bars come first, then the order of `data/bars.json`. The hours there are
 **usual hours** taken from schlouk-map.com (Oct 2026); they are unofficial and
 sources sometimes disagree. Edit the file to fix an hour or add a bar.
+
+## Ring road live
+
+The bottom of the left column alternates every 20 s between the hourly forecast
+(or tonight's bars) and **Rocade en direct**: the official DIR Ouest traffic camera
+closest to the stop (N136 Maurepas), as published by Bison Futé. Clips are 30 s,
+renewed every 2 minutes and time-stamped in the image; the page reloads one only
+while the camera is on screen. Tap the picture to switch to Bréquigny, then Tizé.
+If the camera feed fails, the panel simply stays on the forecast.
+
+The camera list comes from Bison Futé's map data
+(`/data/<iteration>/trafic/maintenant/camerasOL6/camerasOL6.json`, Lambert-93
+coordinates); the three Rennes ring-road cameras are hard-coded in `assets/app.js`.
 
 ## Every bus has a name
 
