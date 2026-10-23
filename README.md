@@ -120,6 +120,14 @@ Open bars come first, then the order of `data/bars.json`. The hours there are
 **usual hours** taken from schlouk-map.com (Oct 2026); they are unofficial and
 sources sometimes disagree. Edit the file to fix an hour or add a bar.
 
+## Every bus has a name
+
+Each STAR vehicle gets an old-fashioned French first name, always the same for the
+same fleet number (stable hash, `assets/names.js`): Raymond is bus 386, Solange is
+bus 356. Names show next to real-time departures, on the approach track (nearby
+buses share one marker) and in the butler's lines: *« Roger, le C4, est presque
+là. C'est maintenant ou jamais. »*
+
 ## The butler
 
 One line at the top comments on the real situation: strike, bus about to arrive,
@@ -145,6 +153,7 @@ node tests/alerts.js                 # alert filtering (announced strike, works,
 node tests/butler.js                 # butler lines
 node tests/bars.js                   # bar opening status (including after midnight)
 node tests/rain.js                   # rain within the hour (quarter-hour slots)
+node tests/names.js                  # bus first names (stable, spread, used by the butler)
 node tests/live_board.js             # downloads the real feed and prints the C4 / C6 board
 pip install gtfs-realtime-bindings
 python3 tests/compare_decoder.py feed.pb   # JS decoder vs Google's reference decoder
@@ -186,6 +195,7 @@ assets/app.js           clock, weather, refresh loop, rendering, screen fitting
 assets/gtfsrt.js        GTFS-RT Protobuf decoder (trip updates, vehicle positions, alerts)
 assets/departures.js    timetable + real-time merge, bus track, alert filtering
 assets/butler.js        the butler's line
+assets/names.js         bus first names
 assets/rain.js          rain within the hour
 assets/bars.js          bar opening status
 data/schedule.json      timetable and track extracted from the GTFS (generated)

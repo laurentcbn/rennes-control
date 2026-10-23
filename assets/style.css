@@ -286,12 +286,11 @@ body::after {
 }
 .track-buses .bus small { font-family: var(--f-mono); font-size: 10px; color: var(--paper); white-space: nowrap; }
 .track-buses .bus.far { transform: none; opacity: .6; }
-.track-buses .bus.far b::before { content: "← "; }
+.track-buses .bus .badges { display: inline-flex; gap: 3px; }
+.track-buses .bus.far .badges::before { content: "←"; font-weight: 700; margin-right: 4px; color: var(--paper-dim); }
 .track-buses .bus.docked b { animation: pulse 1.2s ease-in-out infinite; }
 .track-buses .bus.end { transform: translateX(calc(-100% + 15px)); flex-direction: row-reverse; }
-.track-buses .bus.stacked small { display: none; }
-.track-buses .bus.stacked { margin-left: -36px; }
-.track-buses .bus.stacked.end { margin-left: 0; margin-right: 36px; }
+
 
 /* STAR alerts: strikes in red, works on our stretch as a quiet line under the track */
 .alert-major {
@@ -384,6 +383,7 @@ body::after {
 .dep-time s { display: block; font-size: 11px; color: var(--paper-faint); font-weight: 400; }
 .dep-info { min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 .dep-note { font-family: var(--f-mono); font-size: 11px; color: var(--paper-faint); }
+.dep-note .bus-name { font-family: var(--f-voice); font-style: italic; font-weight: 400; font-size: 15px; color: var(--paper); }
 .dep-delay {
   font-family: var(--f-mono);
   font-size: 13px; font-weight: 500;

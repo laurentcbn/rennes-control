@@ -144,7 +144,7 @@
   function renderButler() {
     var el = $('butler');
     var line = state.schedule && !state.feedLoading
-      ? Butler.butlerLine(board, state.weather || null, nowSec(), parseInt(fmtHour.format(new Date()), 10) % 24, alerts) : null;
+      ? Butler.butlerLine(board, state.weather || null, nowSec(), parseInt(fmtHour.format(new Date()), 10) % 24, alerts, BusNames.busName) : null;
     if (!line || el.getAttribute('data-line') === line) return;
     el.setAttribute('data-line', line);
     el.classList.remove('show');
@@ -288,18 +288,24 @@
         if (d.status === 'live' && !seen[d.trip] && d.time - now < 1200 && d.time > now) buses.push({ line: line, vehicle: d.vehicle, trip: d.trip, pos: 0, far: true, eta: d.time });
       });
     });
-    var lines = s.lines, prev = null;
+    // Buses close together (or all the far ones) share one marker: badges side by side, names joined.
+    var lines = s.lines, groups = [];
     buses.sort(function (a, b) { return b.pos - a.pos; });
-    $('track-buses').innerHTML = buses.map(function (b) {
-      var l = lines[b.line];
-      // Two buses close together: the second one keeps only its badge, nudged aside.
-      var stacked = prev !== null && prev - b.pos < 0.8;
-      prev = b.pos;
-      var label = b.far ? 'plus loin' : b.atStop && b.pos === n ? 'à quai' : 'bus ' + b.vehicle;
-      return '<span class="bus' + (b.far ? ' far' : '') + (b.atStop && b.pos === n ? ' docked' : '') +
-        (stacked ? ' stacked' : '') + (b.pos > n - 1.2 ? ' end' : '') +
-        '" style="left:' + (b.pos / n * 100) + '%;--line:' + l.color + ';--line-ink:' + l.text_color + '">' +
-        '<b>' + b.line + '</b><small>' + esc(label) + '</small></span>';
+    buses.forEach(function (b) {
+      var g = groups[groups.length - 1];
+      if (g && (b.far ? g.far : !g.far && g.min - b.pos < 0.8)) { g.buses.push(b); g.min = b.pos; }
+      else groups.push({ pos: b.pos, min: b.pos, far: !!b.far, buses: [b] });
+    });
+    $('track-buses').innerHTML = groups.map(function (g) {
+      var docked = g.buses.some(function (b) { return b.atStop && b.pos === n; });
+      var names = g.buses.map(function (b) { return BusNames.busName(b.vehicle) || 'bus ' + b.vehicle; });
+      var label = g.far ? 'plus loin' : (names.length > 2 ? names.slice(0, 2).join(' · ') + ' +' + (names.length - 2) : names.join(' · ')) + (docked ? ' · à quai' : '');
+      var badges = g.buses.map(function (b) {
+        var l = lines[b.line];
+        return '<b style="--line:' + l.color + ';--line-ink:' + l.text_color + '">' + b.line + '</b>';
+      }).join('');
+      return '<span class="bus' + (g.far ? ' far' : '') + (docked ? ' docked' : '') + (g.pos > n - 1.2 ? ' end' : '') +
+        '" style="left:' + (g.pos / n * 100) + '%">' + '<span class="badges">' + badges + '</span><small>' + esc(label) + '</small></span>';
     }).join('');
     var note;
     if (!state.vehicles && !state.vehiclesError) note = 'Lecture des positions…';
@@ -334,7 +340,7 @@
     var tag = d.status === 'live' ? '<span class="tag tag-live"><i></i>Temps réel</span>'
       : d.status === 'canceled' ? '<span class="tag tag-cancel">Supprimé</span>'
       : '<span class="tag tag-sched">Théorique</span>';
-    var note = d.status === 'live' && d.vehicle ? '<span class="dep-note">bus n° ' + esc(d.vehicle) + '</span>' : '';
+    var note = d.status === 'live' && d.vehicle ? '<span class="dep-note"><b class="bus-name">' + esc(BusNames.busName(d.vehicle)) + '</b> · n° ' + esc(d.vehicle) + '</span>' : '';
     var dl = d.status === 'live' ? Departures.delayLabel(d.delay) : null;
     var delay = dl ? '<span class="dep-delay" data-kind="' + dl.kind + '">' + esc(dl.text) + '</span>' : '<span></span>';
 

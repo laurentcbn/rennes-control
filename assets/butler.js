@@ -13,7 +13,8 @@
    * weather: { code, precipitation, rainSoon (0-100 probability next hour) } or null
    * nowSec:  unix seconds; hour: current hour in Europe/Paris (0-23)
    */
-  function butlerLine(board, weather, nowSec, hour, alerts) {
+  // nameOf(vehicle) -> the bus's first name (assets/names.js), optional
+  function butlerLine(board, weather, nowSec, hour, alerts, nameOf) {
     if (!board) return null;
     var major = alerts && alerts.major || [];
     var strikeNow = major.filter(function (a) { return !a.upcoming; })[0];
@@ -34,10 +35,14 @@
 
     if (canceled) return 'Le ' + canceled.line + ' de ' + hm(canceled.scheduled) + ' s’est décommandé. Le suivant fera l’affaire.';
     if (wait > 3600) return (hour >= 21 || hour < 5 ? 'Prochain bus dans plus d’une heure. La nuit est à vous.' : 'Prochain bus dans plus d’une heure. Rien ne presse.');
-    if (wait <= 150 && wait > 30) return 'Le ' + next.line + ' est presque là. C’est maintenant ou jamais.';
+    // "Gérard, le C4," when the bus is tracked and has a name, otherwise "Le C4"
+    var name = next.vehicle && nameOf ? nameOf(next.vehicle) : null;
+    var who = name ? name + ', le ' + next.line + ',' : 'Le ' + next.line;
+
+    if (wait <= 150 && wait > 30) return who + ' est presque là. C’est maintenant ou jamais.';
     if (raining && wait <= 900) return 'Il pleut. Parapluie, et on y va.';
-    if (next.status === 'live' && next.delay >= 180) return 'Le ' + next.line + ' se fait désirer, ' + Math.round(next.delay / 60) + ' minutes de retard. Prenez votre temps.';
-    if (next.status === 'live' && next.delay <= -60) return 'Le ' + next.line + ' est en avance. Ne traînez pas.';
+    if (next.status === 'live' && next.delay >= 180) return (name ? name + ' se fait désirer : ' : 'Le ' + next.line + ' se fait désirer, ') + Math.round(next.delay / 60) + ' minutes de retard. Prenez votre temps.';
+    if (next.status === 'live' && next.delay <= -60) return who + ' est en avance. Ne traînez pas.';
     if (weather && weather.rainIn !== null && weather.rainIn !== undefined && weather.rainIn <= 30 && wait <= 1800)
       return weather.rainIn < 5 ? 'La pluie arrive. Parapluie, sans hésiter.' : 'Pluie dans ' + Math.round(weather.rainIn / 5) * 5 + ' minutes. Prenez un parapluie.';
     if (rainSoon && wait <= 1800) return 'La pluie s’annonce. Prenez un parapluie, au cas où.';
